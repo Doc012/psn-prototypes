@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Maroon browser scrollbar for the whole app */
+html, body {
+  scrollbar-color: #800000 #e5e7eb; /* thumb color, track color */
+  scrollbar-width: thin;
+}
+
+/* For Webkit browsers (Chrome, Edge, Safari) */
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+  width: 8px;
+  background: #e5e7eb; /* track color */
+}
+html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+  background: #800000; /* thumb color */
+  border-radius: 8px;
+}
