@@ -5,6 +5,18 @@ import { toast } from 'react-toastify';
 import { HiLockClosed, HiMail, HiUserCircle, HiShieldCheck, HiArrowRight } from 'react-icons/hi';
 import { motion } from 'framer-motion';
 
+// Define the determineUserRole function
+const determineUserRole = (email) => {
+  // Simple logic to determine user role based on email
+  if (email.includes('admin')) {
+    return 'admin';
+  } else if (email.includes('attorney')) {
+    return 'attorney';
+  } else {
+    return 'client';
+  }
+};
+
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,9 +34,39 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      await login(email, password);
+      // Authenticate user (this would typically call an API)
+      
+      // For demo purposes
+      const userData = {
+        id: 123,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: email,
+        // other user data
+      };
+      
+      // Set role based on login form or API response
+      const role = determineUserRole(email); // Your function to get role
+      
+      // Call login function from AuthContext
+      login(userData, role);
+      
+      // Redirect based on role
+      let dashboardPath;
+      switch(role) {
+        case 'admin':
+          dashboardPath = '/client-portal/admin/dashboard';
+          break;
+        case 'attorney':
+          dashboardPath = '/client-portal/attorney/dashboard';
+          break;
+        default:
+          dashboardPath = '/client-portal/dashboard';
+      }
+      
+      // Redirect to appropriate dashboard
+      navigate(dashboardPath, { replace: true });
       toast.success('Login successful!');
-      navigate(from, { replace: true });
     } catch (error) {
       toast.error(error.message || 'Failed to login');
       setLoading(false);

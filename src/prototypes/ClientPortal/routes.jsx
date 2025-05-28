@@ -1,5 +1,5 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 // Public pages
@@ -15,16 +15,16 @@ import FAQPage from './pages/public/FAQPage'; // New import
 import ServicesPage from './pages/public/ServicesPage';
 
 // Private pages - Client
-import DashboardPage from './pages/private/DashboardPage';
-import ProfilePage from './pages/private/ProfilePage';
+import DashboardPage from './pages/private/client/ClientDashboardPage';
+import ProfilePage from './pages/private/client/ClientProfilePage';
 import ClientCasesPage from './pages/private/client/ClientCasesPage';
 import CaseDetailPage from './pages/private/client/CaseDetailPage';
-import DocumentsPage from './pages/private/DocumentsPage';
-import MessagesPage from './pages/private/MessagesPage';
-import CalendarPage from './pages/private/CalendarPage';
-import InvoicesPage from './pages/private/InvoicesPage';
-import NotificationsPage from './pages/private/NotificationsPage';
-import SupportPage from './pages/private/SupportPage';
+import DocumentsPage from './pages/private/client/ClientDocumentsPage';
+import MessagesPage from './pages/private/client/ClientMessagesPage';
+import CalendarPage from './pages/private/client/ClientCalendarPage';
+import InvoicesPage from './pages/private/client/ClientInvoicesPage';
+import NotificationsPage from './pages/private/client/ClientNotificationsPage';
+import SupportPage from './pages/private/client/ClientSupportPage';
 
 // Private pages - Attorney
 import AttorneyDashboardPage from './pages/private/attorney/AttorneyDashboardPage';
@@ -45,32 +45,17 @@ import PublicLayout from './components/layouts/PublicLayout'; // Corrected impor
 import PrivateLayout from './components/layouts/PrivateLayout';
 
 // Protected route component
-const ProtectedRoute = ({ children, requiredRole }) => {
-  const { user, isAuthenticated, loading } = useAuth();
+const ProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
-  if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
-  }
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/client-portal/login" />;
-  }
-  
-  // Safely check the user role
-  const userRole = user?.role || 'client';
-  
-  if (requiredRole && userRole !== requiredRole) {
-    // Redirect to appropriate dashboard based on role
-    if (userRole === 'admin') {
-      return <Navigate to="/client-portal/admin/dashboard" />;
-    } else if (userRole === 'attorney') {
-      return <Navigate to="/client-portal/attorney/dashboard" />;
-    } else {
-      return <Navigate to="/client-portal/dashboard" />;
+  useEffect(() => {
+    if (!user) {
+      navigate('/client-portal/login', { replace: true });
     }
-  }
+  }, [user, navigate]);
   
-  return children;
+  return user ? children : null;
 };
 
 const ClientPortalRoutes = () => {
@@ -94,7 +79,7 @@ const ClientPortalRoutes = () => {
       <Route element={<PrivateLayout />}>
         {/* Client Routes */}
         <Route path="dashboard" element={
-          <ProtectedRoute requiredRole="client">
+          <ProtectedRoute>
             <DashboardPage />
           </ProtectedRoute>
         } />
@@ -104,7 +89,7 @@ const ClientPortalRoutes = () => {
           </ProtectedRoute>
         } />
         <Route path="cases" element={
-          <ProtectedRoute requiredRole="client">
+          <ProtectedRoute>
             <ClientCasesPage />
           </ProtectedRoute>
         } />
@@ -151,54 +136,54 @@ const ClientPortalRoutes = () => {
 
         {/* Attorney Routes */}
         <Route path="attorney/dashboard" element={
-          <ProtectedRoute requiredRole="attorney">
+          <ProtectedRoute>
             <AttorneyDashboardPage />
           </ProtectedRoute>
         } />
         <Route path="attorney/cases" element={
-          <ProtectedRoute requiredRole="attorney">
+          <ProtectedRoute>
             <AttorneyCasesPage />
           </ProtectedRoute>
         } />
         <Route path="attorney/clients" element={
-          <ProtectedRoute requiredRole="attorney">
+          <ProtectedRoute>
             <AttorneyClientsPage />
           </ProtectedRoute>
         } />
         <Route path="attorney/time-tracking" element={
-          <ProtectedRoute requiredRole="attorney">
+          <ProtectedRoute>
             <AttorneyTimeTrackingPage />
           </ProtectedRoute>
         } />
         <Route path="attorney/billing" element={
-          <ProtectedRoute requiredRole="attorney">
+          <ProtectedRoute>
             <AttorneyBillingPage />
           </ProtectedRoute>
         } />
 
         {/* Admin Routes */}
         <Route path="admin/dashboard" element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute>
             <AdminDashboardPage />
           </ProtectedRoute>
         } />
         <Route path="admin/users" element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute>
             <UsersManagementPage />
           </ProtectedRoute>
         } />
         <Route path="admin/settings" element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute>
             <SystemSettingsPage />
           </ProtectedRoute>
         } />
         <Route path="admin/reports" element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute>
             <ReportsPage />
           </ProtectedRoute>
         } />
         <Route path="admin/audit-logs" element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute>
             <AuditLogsPage />
           </ProtectedRoute>
         } />
