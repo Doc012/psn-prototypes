@@ -20,14 +20,15 @@ import {
   HiOutlineEyeOff,
   HiOutlineRefresh,
   HiOutlineClipboardList,
-  HiOutlineUserCircle
+  HiOutlineUserCircle,
+  HiOutlineClipboardCopy
 } from 'react-icons/hi';
 
 const ClientProfilePage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('personal');
   const [loading, setLoading] = useState(false);
-  const [profileImage, setProfileImage] = useState('/placeholder-avatar.jpg');
+  const [profileImage, setProfileImage] = useState('https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?semt=ais_hybrid&w=740');
   const fileInputRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -245,653 +246,442 @@ const ClientProfilePage = () => {
                       <input
                         ref={fileInputRef}
                         type="file"
-                        className="hidden"
                         accept="image/*"
                         onChange={handleProfileImageUpload}
+                        className="hidden"
                       />
                     </div>
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">
+                    <h2 className="mt-4 text-lg font-semibold text-gray-900">
                       {formData.firstName} {formData.lastName}
-                    </h3>
-                    <p className="text-gray-500">{formData.email}</p>
-                    <div className="mt-4 w-full">
-                      <div className="text-sm font-medium text-gray-500 mb-2">Client ID</div>
-                      <div className="text-sm text-gray-900 p-2 bg-gray-100 rounded flex items-center justify-between">
-                        <span>CL-{user?.id || '10087'}</span>
-                        <button 
-                          className="text-[#800000] hover:text-[#600000]"
-                          title="Copy to clipboard"
-                        >
-                          <HiOutlineClipboardCopy className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-4 w-full">
-                      <div className="text-sm font-medium text-gray-500 mb-2">Member Since</div>
-                      <div className="text-sm text-gray-900 p-2 bg-gray-100 rounded">
-                        January 15, 2023
-                      </div>
+                    </h2>
+                    <p className="text-sm text-gray-500">{formData.occupation}</p>
+                    <div className="mt-4 flex space-x-3">
+                      <button 
+                        className="text-[#800000] hover:text-[#600000]"
+                        title="Copy to clipboard"
+                      >
+                        <HiOutlineClipboardCopy className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 </div>
-
-                <div className="md:w-2/3">
-                  <div className="bg-white">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
-                      {!isEditing ? (
+                <div className="md:flex-1">
+                  <form onSubmit={handleSubmit}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          First Name
+                        </label>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Last Name
+                        </label>
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Phone
+                        </label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Address
+                        </label>
+                        <input
+                          type="text"
+                          name="address"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          City
+                        </label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          State
+                        </label>
+                        <input
+                          type="text"
+                          name="state"
+                          value={formData.state}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          ZIP Code
+                        </label>
+                        <input
+                          type="text"
+                          name="zipCode"
+                          value={formData.zipCode}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Occupation
+                        </label>
+                        <input
+                          type="text"
+                          name="occupation"
+                          value={formData.occupation}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Employer
+                        </label>
+                        <input
+                          type="text"
+                          name="employer"
+                          value={formData.employer}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Birth Date
+                        </label>
+                        <input
+                          type="date"
+                          name="birthDate"
+                          value={formData.birthDate}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-6 flex justify-end space-x-4">
+                      {isEditing ? (
                         <button
-                          onClick={() => setIsEditing(true)}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                          type="submit"
+                          className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] transition-colors"
                         >
-                          <HiOutlinePencil className="-ml-0.5 mr-2 h-4 w-4" />
-                          Edit Information
+                          {loading ? 'Saving...' : 'Save Changes'}
                         </button>
                       ) : (
                         <button
-                          onClick={() => setIsEditing(false)}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                          onClick={() => setIsEditing(true)}
+                          className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] transition-colors"
                         >
-                          <HiOutlineX className="-ml-0.5 mr-2 h-4 w-4" />
-                          Cancel
+                          Edit Profile
                         </button>
                       )}
+                      <button
+                        onClick={() => setActiveTab('security')}
+                        className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-[#800000] hover:text-[#600000] transition-colors"
+                      >
+                        Skip to Security
+                      </button>
                     </div>
-
-                    <form onSubmit={handleSubmit}>
-                      <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                        <div className="sm:col-span-3">
-                          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                            First name
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              name="firstName"
-                              id="firstName"
-                              value={formData.firstName}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-3">
-                          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                            Last name
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              name="lastName"
-                              id="lastName"
-                              value={formData.lastName}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-3">
-                          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                            Email address
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="email"
-                              name="email"
-                              id="email"
-                              value={formData.email}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-3">
-                          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                            Phone number
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              name="phone"
-                              id="phone"
-                              value={formData.phone}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-6">
-                          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                            Street address
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              name="address"
-                              id="address"
-                              value={formData.address}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                            City
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              name="city"
-                              id="city"
-                              value={formData.city}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <label htmlFor="state" className="block text-sm font-medium text-gray-700">
-                            State / Province
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              name="state"
-                              id="state"
-                              value={formData.state}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">
-                            ZIP / Postal code
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              name="zipCode"
-                              id="zipCode"
-                              value={formData.zipCode}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-3">
-                          <label htmlFor="occupation" className="block text-sm font-medium text-gray-700">
-                            Occupation
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              name="occupation"
-                              id="occupation"
-                              value={formData.occupation}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-3">
-                          <label htmlFor="employer" className="block text-sm font-medium text-gray-700">
-                            Employer
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              name="employer"
-                              id="employer"
-                              value={formData.employer}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-3">
-                          <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700">
-                            Date of Birth
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="date"
-                              name="birthDate"
-                              id="birthDate"
-                              value={formData.birthDate}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md ${!isEditing ? 'bg-gray-50' : ''}`}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {isEditing && (
-                        <div className="mt-6 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => setIsEditing(false)}
-                            className="mr-3 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                            disabled={loading}
-                          >
-                            {loading ? 'Saving...' : 'Save Changes'}
-                          </button>
-                        </div>
-                      )}
-                    </form>
-                  </div>
+                  </form>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Security Tab */}
+          {/* Account & Security Tab */}
           {activeTab === 'security' && (
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
-                  <form onSubmit={handlePasswordChange}>
-                    <div className="space-y-4">
-                      <div>
-                        <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
-                          Current Password
-                        </label>
-                        <div className="mt-1 relative rounded-md shadow-sm">
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            name="currentPassword"
-                            id="currentPassword"
-                            value={formData.currentPassword}
-                            onChange={handleInputChange}
-                            className="shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md pr-10"
-                            required
-                          />
-                          <button
-                            type="button"
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? (
-                              <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
-                            ) : (
-                              <HiOutlineEye className="h-5 w-5 text-gray-400" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                          New Password
-                        </label>
-                        <div className="mt-1 relative rounded-md shadow-sm">
-                          <input
-                            type={showNewPassword ? "text" : "password"}
-                            name="newPassword"
-                            id="newPassword"
-                            value={formData.newPassword}
-                            onChange={handleInputChange}
-                            className="shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md pr-10"
-                            required
-                          />
-                          <button
-                            type="button"
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                            onClick={() => setShowNewPassword(!showNewPassword)}
-                          >
-                            {showNewPassword ? (
-                              <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
-                            ) : (
-                              <HiOutlineEye className="h-5 w-5 text-gray-400" />
-                            )}
-                          </button>
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Password must be at least 8 characters and include a number and a special character
-                        </p>
-                      </div>
-                      <div>
-                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                          Confirm New Password
-                        </label>
-                        <div className="mt-1 relative rounded-md shadow-sm">
-                          <input
-                            type={showConfirmPassword ? "text" : "password"}
-                            name="confirmPassword"
-                            id="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleInputChange}
-                            className="shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md pr-10"
-                            required
-                          />
-                          <button
-                            type="button"
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          >
-                            {showConfirmPassword ? (
-                              <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
-                            ) : (
-                              <HiOutlineEye className="h-5 w-5 text-gray-400" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex justify-end">
-                        <button
-                          type="submit"
-                          className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                          disabled={loading}
-                        >
-                          {loading ? 'Changing Password...' : 'Change Password'}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Security Settings</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <HiOutlineShieldCheck className="h-6 w-6 text-green-500" />
-                      </div>
-                      <div className="ml-3">
-                        <h4 className="text-sm font-medium text-gray-900">Two-Factor Authentication</h4>
-                        <p className="mt-1 text-sm text-gray-500">
-                          Add an extra layer of security to your account by requiring a verification code in addition to your password.
-                        </p>
-                        <div className="mt-3">
-                          <button
-                            type="button"
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                          >
-                            Enable Two-Factor
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+              <form onSubmit={handlePasswordChange}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Current Password
+                    </label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="currentPassword"
+                      value={formData.currentPassword}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(prev => !prev)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm"
+                    >
+                      {showPassword ? (
+                        <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <HiOutlineEye className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
                   </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <HiOutlineExclamationCircle className="h-6 w-6 text-yellow-500" />
-                      </div>
-                      <div className="ml-3">
-                        <h4 className="text-sm font-medium text-gray-900">Active Sessions</h4>
-                        <p className="mt-1 text-sm text-gray-500">
-                          You're currently logged in on 2 devices
-                        </p>
-                        <div className="mt-3">
-                          <button
-                            type="button"
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                          >
-                            <HiOutlineRefresh className="mr-2 h-4 w-4" />
-                            Manage Sessions
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      New Password
+                    </label>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      name="newPassword"
+                      value={formData.newPassword}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(prev => !prev)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm"
+                    >
+                      {showNewPassword ? (
+                        <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <HiOutlineEye className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
                   </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <HiOutlineMail className="h-6 w-6 text-blue-500" />
-                      </div>
-                      <div className="ml-3">
-                        <h4 className="text-sm font-medium text-gray-900">Login Email Notifications</h4>
-                        <p className="mt-1 text-sm text-gray-500">
-                          Receive email notifications when your account is accessed from a new device or location.
-                        </p>
-                        <div className="mt-3">
-                          <label className="inline-flex items-center">
-                            <input
-                              type="checkbox"
-                              className="focus:ring-[#800000] h-4 w-4 text-[#800000] border-gray-300 rounded"
-                              checked={true}
-                              onChange={() => {}}
-                            />
-                            <span className="ml-2 text-sm text-gray-700">Enable login alerts</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Confirm Password
+                    </label>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(prev => !prev)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm"
+                    >
+                      {showConfirmPassword ? (
+                        <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <HiOutlineEye className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
                   </div>
                 </div>
-              </div>
+                <div className="mt-6 flex justify-end">
+                  {isEditing && (
+                    <button
+                      type="submit"
+                      className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] transition-colors"
+                    >
+                      {loading ? 'Changing...' : 'Change Password'}
+                    </button>
+                  )}
+                </div>
+              </form>
             </div>
           )}
 
           {/* Notifications Tab */}
           {activeTab === 'notifications' && (
             <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Notification Preferences</h3>
-              <div className="mt-6 space-y-6">
-                <div className="relative flex items-start">
-                  <div className="flex items-center h-5">
+              <form>
+                <div className="space-y-4">
+                  <div className="flex items-center">
                     <input
                       id="emailNotifications"
                       name="emailNotifications"
                       type="checkbox"
-                      className="focus:ring-[#800000] h-4 w-4 text-[#800000] border-gray-300 rounded"
                       checked={formData.emailNotifications}
                       onChange={handleCheckboxChange}
+                      className="h-4 w-4 text-[#800000] border-gray-300 rounded focus:ring-[#800000]"
                     />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="emailNotifications" className="font-medium text-gray-700">
+                    <label
+                      htmlFor="emailNotifications"
+                      className="ml-3 block text-sm font-medium text-gray-700"
+                    >
                       Email Notifications
                     </label>
-                    <p className="text-gray-500">Receive general notifications via email</p>
                   </div>
-                </div>
-
-                <div className="relative flex items-start">
-                  <div className="flex items-center h-5">
+                  <div className="flex items-center">
                     <input
                       id="smsNotifications"
                       name="smsNotifications"
                       type="checkbox"
-                      className="focus:ring-[#800000] h-4 w-4 text-[#800000] border-gray-300 rounded"
                       checked={formData.smsNotifications}
                       onChange={handleCheckboxChange}
+                      className="h-4 w-4 text-[#800000] border-gray-300 rounded focus:ring-[#800000]"
                     />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="smsNotifications" className="font-medium text-gray-700">
+                    <label
+                      htmlFor="smsNotifications"
+                      className="ml-3 block text-sm font-medium text-gray-700"
+                    >
                       SMS Notifications
                     </label>
-                    <p className="text-gray-500">Receive text message notifications for important updates</p>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="documentAlerts"
+                      name="documentAlerts"
+                      type="checkbox"
+                      checked={formData.documentAlerts}
+                      onChange={handleCheckboxChange}
+                      className="h-4 w-4 text-[#800000] border-gray-300 rounded focus:ring-[#800000]"
+                    />
+                    <label
+                      htmlFor="documentAlerts"
+                      className="ml-3 block text-sm font-medium text-gray-700"
+                    >
+                      Document Alerts
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="caseUpdates"
+                      name="caseUpdates"
+                      type="checkbox"
+                      checked={formData.caseUpdates}
+                      onChange={handleCheckboxChange}
+                      className="h-4 w-4 text-[#800000] border-gray-300 rounded focus:ring-[#800000]"
+                    />
+                    <label
+                      htmlFor="caseUpdates"
+                      className="ml-3 block text-sm font-medium text-gray-700"
+                    >
+                      Case Updates
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="billingAlerts"
+                      name="billingAlerts"
+                      type="checkbox"
+                      checked={formData.billingAlerts}
+                      onChange={handleCheckboxChange}
+                      className="h-4 w-4 text-[#800000] border-gray-300 rounded focus:ring-[#800000]"
+                    />
+                    <label
+                      htmlFor="billingAlerts"
+                      className="ml-3 block text-sm font-medium text-gray-700"
+                    >
+                      Billing Alerts
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="appointmentReminders"
+                      name="appointmentReminders"
+                      type="checkbox"
+                      checked={formData.appointmentReminders}
+                      onChange={handleCheckboxChange}
+                      className="h-4 w-4 text-[#800000] border-gray-300 rounded focus:ring-[#800000]"
+                    />
+                    <label
+                      htmlFor="appointmentReminders"
+                      className="ml-3 block text-sm font-medium text-gray-700"
+                    >
+                      Appointment Reminders
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="marketingCommunications"
+                      name="marketingCommunications"
+                      type="checkbox"
+                      checked={formData.marketingCommunications}
+                      onChange={handleCheckboxChange}
+                      className="h-4 w-4 text-[#800000] border-gray-300 rounded focus:ring-[#800000]"
+                    />
+                    <label
+                      htmlFor="marketingCommunications"
+                      className="ml-3 block text-sm font-medium text-gray-700"
+                    >
+                      Marketing Communications
+                    </label>
                   </div>
                 </div>
-
-                <div className="border-t border-gray-200 pt-6">
-                  <h4 className="text-base font-medium text-gray-900">Specific Notifications</h4>
-                  <div className="mt-4 space-y-4">
-                    <div className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          id="documentAlerts"
-                          name="documentAlerts"
-                          type="checkbox"
-                          className="focus:ring-[#800000] h-4 w-4 text-[#800000] border-gray-300 rounded"
-                          checked={formData.documentAlerts}
-                          onChange={handleCheckboxChange}
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor="documentAlerts" className="font-medium text-gray-700">
-                          Document Alerts
-                        </label>
-                        <p className="text-gray-500">Notification when new documents are uploaded or require your review</p>
-                      </div>
-                    </div>
-
-                    <div className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          id="caseUpdates"
-                          name="caseUpdates"
-                          type="checkbox"
-                          className="focus:ring-[#800000] h-4 w-4 text-[#800000] border-gray-300 rounded"
-                          checked={formData.caseUpdates}
-                          onChange={handleCheckboxChange}
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor="caseUpdates" className="font-medium text-gray-700">
-                          Case Updates
-                        </label>
-                        <p className="text-gray-500">Receive notifications about changes to your case status</p>
-                      </div>
-                    </div>
-
-                    <div className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          id="billingAlerts"
-                          name="billingAlerts"
-                          type="checkbox"
-                          className="focus:ring-[#800000] h-4 w-4 text-[#800000] border-gray-300 rounded"
-                          checked={formData.billingAlerts}
-                          onChange={handleCheckboxChange}
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor="billingAlerts" className="font-medium text-gray-700">
-                          Billing & Payment Alerts
-                        </label>
-                        <p className="text-gray-500">Notifications about invoices, payments due, and receipt confirmations</p>
-                      </div>
-                    </div>
-
-                    <div className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          id="appointmentReminders"
-                          name="appointmentReminders"
-                          type="checkbox"
-                          className="focus:ring-[#800000] h-4 w-4 text-[#800000] border-gray-300 rounded"
-                          checked={formData.appointmentReminders}
-                          onChange={handleCheckboxChange}
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor="appointmentReminders" className="font-medium text-gray-700">
-                          Appointment Reminders
-                        </label>
-                        <p className="text-gray-500">Receive reminders about upcoming meetings and court dates</p>
-                      </div>
-                    </div>
-
-                    <div className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          id="marketingCommunications"
-                          name="marketingCommunications"
-                          type="checkbox"
-                          className="focus:ring-[#800000] h-4 w-4 text-[#800000] border-gray-300 rounded"
-                          checked={formData.marketingCommunications}
-                          onChange={handleCheckboxChange}
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor="marketingCommunications" className="font-medium text-gray-700">
-                          Marketing Communications
-                        </label>
-                        <p className="text-gray-500">Receive newsletters, offers, and legal updates</p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="submit"
+                    className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] transition-colors"
+                  >
+                    Save Notification Preferences
+                  </button>
                 </div>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  type="button"
-                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                >
-                  Save Preferences
-                </button>
-              </div>
+              </form>
             </div>
           )}
 
-          {/* Activity Tab */}
+          {/* Account Activity Tab */}
           {activeTab === 'activity' && (
             <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Account Activity</h3>
-              <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul role="list" className="divide-y divide-gray-200">
-                  {userActivity.map((activity) => (
-                    <li key={activity.id}>
-                      <div className="px-4 py-4 sm:px-6">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0">
-                            {getActivityIcon(activity.type)}
-                          </div>
-                          <div className="ml-4 flex-1">
-                            <div className="text-sm font-medium text-gray-900">
-                              {activity.description}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {new Date(activity.date).toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 sm:px-6">
-                  <div className="flex justify-between">
-                    <button
-                      type="button"
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                    >
-                      View All Activity
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                    >
-                      Download Activity Log
-                    </button>
+              <div className="space-y-4">
+                {userActivity.map(activity => (
+                  <div key={activity.id} className="flex items-center p-4 bg-gray-50 rounded-lg shadow-sm">
+                    <div className="flex-shrink-0">
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">
+                        {activity.description}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(activity.date).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           )}

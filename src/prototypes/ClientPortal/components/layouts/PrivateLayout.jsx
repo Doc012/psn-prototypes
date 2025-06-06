@@ -88,7 +88,8 @@ const PrivateLayout = () => {
         <Sidebar 
           isOpen={sidebarOpen} 
           setIsOpen={setSidebarOpen} 
-          isCollapsed={sidebarCollapsed} 
+          isCollapsed={sidebarCollapsed}
+          userRole={userRole}  // Add this prop
         />
       </AnimatePresence>
       
@@ -139,6 +140,7 @@ const PrivateLayout = () => {
           isSidebarOpen={sidebarOpen}
           user={user}
           dashboardPath={dashboardPath}
+          userRole={userRole}  // Add this prop
         />
         
         <main className="flex-1 relative overflow-y-auto focus:outline-none">

@@ -1,772 +1,412 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
 import { 
-  HiOutlineUser, 
-  HiOutlineUserGroup, 
-  HiOutlineBriefcase, 
-  HiOutlineDocumentText,
-  HiOutlineShieldCheck,
-  HiOutlineCash,
-  HiOutlineExclamationCircle,
+  HiOutlineUsers, 
+  HiOutlineDocumentText, 
+  HiOutlineCash, 
+  HiOutlineScale,
   HiOutlineChartBar,
-  HiOutlineCheckCircle,
-  HiOutlineCalendar,
   HiOutlineClock,
-  HiOutlineUserAdd,
-  HiOutlineDocumentAdd,
-  HiOutlineAnnotation
+  HiOutlineCalendar,
+  HiOutlineDocumentDuplicate,
+  HiOutlineExclamation,
+  HiOutlineOfficeBuilding,
+  HiOutlineBriefcase,
+  HiOutlineArrowUp,
+  HiOutlineArrowDown
 } from 'react-icons/hi';
 
 const AdminDashboardPage = () => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeAttorneys: 0,
-    activeClients: 0,
-    totalCases: 0,
-    activeCases: 0,
-    revenueThisMonth: 0,
-    pendingInvoices: 0
+    attorneys: 0,
+    clients: 0,
+    cases: 0,
+    revenue: 0,
+    pendingInvoices: 0,
+    documents: 0,
+    upcomingEvents: 0
   });
-  const [recentUsers, setRecentUsers] = useState([]);
-  const [recentCases, setRecentCases] = useState([]);
-  const [systemAlerts, setSystemAlerts] = useState([]);
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
-  
-  // Mock data for users
-  const mockUsers = [
-    {
-      id: 1,
-      name: 'John Peterson',
-      email: 'john.peterson@psnattorneys.com',
-      role: 'Attorney',
-      status: 'Active',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      createdAt: '2023-01-15T09:30:00Z'
-    },
-    {
-      id: 2,
-      name: 'Sarah Nguyen',
-      email: 'sarah.nguyen@psnattorneys.com',
-      role: 'Attorney',
-      status: 'Active',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      createdAt: '2023-02-10T14:20:00Z'
-    },
-    {
-      id: 3,
-      name: 'Michael Patel',
-      email: 'michael.patel@psnattorneys.com',
-      role: 'Attorney',
-      status: 'Active',
-      avatarUrl: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      createdAt: '2023-03-05T11:45:00Z'
-    },
-    {
-      id: 101,
-      name: 'Sarah Smith',
-      email: 'sarah.smith@example.com',
-      role: 'Client',
-      status: 'Active',
-      avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      createdAt: '2023-05-12T10:15:00Z'
-    },
-    {
-      id: 102,
-      name: 'Robert Williams',
-      email: 'robert.williams@example.com',
-      role: 'Client',
-      status: 'Active',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      createdAt: '2023-05-18T09:05:00Z'
-    }
-  ];
-  
-  // Mock data for cases
-  const mockCases = [
-    {
-      id: 1,
-      title: 'Smith v. Johnson',
-      caseNumber: 'PI-2023-1452',
-      type: 'Personal Injury',
-      status: 'Active',
-      assignedAttorney: 'Sarah Nguyen',
-      client: 'Sarah Smith',
-      startDate: '2023-05-12',
-      lastActivity: '2023-05-20'
-    },
-    {
-      id: 2,
-      title: 'Estate of Williams',
-      caseNumber: 'PR-2023-0783',
-      type: 'Estate Planning',
-      status: 'Active',
-      assignedAttorney: 'John Peterson',
-      client: 'Robert Williams',
-      startDate: '2023-04-03',
-      lastActivity: '2023-05-18'
-    },
-    {
-      id: 3,
-      title: 'Brown LLC Contract',
-      caseNumber: 'CL-2023-0251',
-      type: 'Corporate',
-      status: 'Pending',
-      assignedAttorney: 'John Peterson',
-      client: 'Thomas Brown',
-      startDate: '2023-05-01',
-      lastActivity: '2023-05-15'
-    },
-    {
-      id: 4,
-      title: 'Jones Divorce',
-      caseNumber: 'FL-2023-0592',
-      type: 'Family Law',
-      status: 'Active',
-      assignedAttorney: 'Michael Patel',
-      client: 'Amanda Jones',
-      startDate: '2023-02-15',
-      lastActivity: '2023-05-19'
-    }
-  ];
-  
-  // Mock system alerts
-  const mockAlerts = [
-    {
-      id: 1,
-      type: 'security',
-      title: 'Security Alert',
-      message: 'Multiple failed login attempts detected for user account michael.patel@psnattorneys.com',
-      severity: 'high',
-      timestamp: '2023-05-20T15:30:00Z',
-      resolved: false
-    },
-    {
-      id: 2,
-      type: 'system',
-      title: 'System Maintenance',
-      message: 'Scheduled maintenance planned for May 25, 2023 from 11:00 PM to 2:00 AM EDT.',
-      severity: 'medium',
-      timestamp: '2023-05-18T09:00:00Z',
-      resolved: false
-    },
-    {
-      id: 3,
-      type: 'billing',
-      title: 'Billing Issue',
-      message: 'Invoice #INV-2023-5612 was declined due to expired payment method.',
-      severity: 'medium',
-      timestamp: '2023-05-19T10:45:00Z',
-      resolved: true
-    },
-    {
-      id: 4,
-      type: 'security',
-      title: 'New Device Login',
-      message: 'New device login detected for user john.peterson@psnattorneys.com from IP 192.168.1.105.',
-      severity: 'low',
-      timestamp: '2023-05-17T13:20:00Z',
-      resolved: true
-    }
-  ];
-  
-  // Mock upcoming events
-  const mockEvents = [
-    {
-      id: 1,
-      title: 'New User Training',
-      type: 'Training',
-      description: 'Orientation for new employees and system training',
-      date: '2023-05-24',
-      time: '10:00 AM'
-    },
-    {
-      id: 2,
-      title: 'Quarterly Billing Review',
-      type: 'Meeting',
-      description: 'Review of Q2 billing and financial projections',
-      date: '2023-05-30',
-      time: '2:00 PM'
-    },
-    {
-      id: 3,
-      title: 'System Maintenance',
-      type: 'Maintenance',
-      description: 'Scheduled downtime for system updates',
-      date: '2023-05-25',
-      time: '11:00 PM'
-    },
-    {
-      id: 4,
-      title: 'Security Protocol Update',
-      type: 'Admin',
-      description: 'Implementation of new security measures',
-      date: '2023-06-02',
-      time: '9:00 AM'
-    }
-  ];
-  
-  // Load data on component mount
+
+  // Simulate data fetching
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Simulate API delay
-        setLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Calculate stats from mock data
-        const attorneys = mockUsers.filter(user => user.role === 'Attorney' && user.status === 'Active');
-        const clients = mockUsers.filter(user => user.role === 'Client' && user.status === 'Active');
-        const activeCases = mockCases.filter(c => c.status === 'Active');
-        
-        // Set statistics
-        setStats({
-          totalUsers: mockUsers.length,
-          activeAttorneys: attorneys.length,
-          activeClients: clients.length,
-          totalCases: mockCases.length,
-          activeCases: activeCases.length,
-          revenueThisMonth: 98750,
-          pendingInvoices: 12
-        });
-        
-        // Set recent users (sort by most recent)
-        setRecentUsers(
-          [...mockUsers].sort((a, b) => 
-            new Date(b.createdAt) - new Date(a.createdAt)
-          ).slice(0, 5)
-        );
-        
-        // Set recent cases (sort by most recent activity)
-        setRecentCases(
-          [...mockCases].sort((a, b) => 
-            new Date(b.lastActivity) - new Date(a.lastActivity)
-          ).slice(0, 5)
-        );
-        
-        // Set system alerts (sort by most recent and unresolved first)
-        setSystemAlerts(
-          [...mockAlerts].sort((a, b) => {
-            // Sort by unresolved first
-            if (a.resolved !== b.resolved) {
-              return a.resolved ? 1 : -1;
-            }
-            // Then by timestamp (most recent first)
-            return new Date(b.timestamp) - new Date(a.timestamp);
-          })
-        );
-        
-        // Set upcoming events (sort by nearest date)
-        setUpcomingEvents(
-          [...mockEvents].sort((a, b) => 
-            new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`)
-          )
-        );
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching admin dashboard data:', err);
-        setError('Failed to load dashboard data. Please try again later.');
-        setLoading(false);
-      }
-    };
+    const timer = setTimeout(() => {
+      setStats({
+        attorneys: 24,
+        clients: 153,
+        cases: 87,
+        activeCases: 62,
+        revenue: 1487500,
+        pendingInvoices: 385000,
+        documents: 1243,
+        upcomingEvents: 18
+      });
+      setLoading(false);
+    }, 1000);
     
-    fetchData();
+    return () => clearTimeout(timer);
   }, []);
-  
-  // Format date helper
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-  
-  // Get relative time
-  const getRelativeTime = (timestamp) => {
-    const now = new Date();
-    const date = new Date(timestamp);
-    const diffInMs = now - date;
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    
-    if (diffInDays > 0) {
-      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-    } else if (diffInHours > 0) {
-      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    } else if (diffInMinutes > 0) {
-      return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Just now';
-    }
-  };
-  
-  // Get alert type icon
-  const getAlertIcon = (type) => {
-    switch (type) {
-      case 'security':
-        return <HiOutlineShieldCheck className="h-5 w-5 text-red-500" />;
-      case 'system':
-        return <HiOutlineExclamationCircle className="h-5 w-5 text-blue-500" />;
-      case 'billing':
-        return <HiOutlineCash className="h-5 w-5 text-yellow-500" />;
-      default:
-        return <HiOutlineExclamationCircle className="h-5 w-5 text-gray-500" />;
-    }
-  };
-  
-  // Get severity class
-  const getSeverityClass = (severity) => {
-    switch (severity) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-  
-  // Get status badge color
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Active': return 'bg-green-100 text-green-800';
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Inactive': return 'bg-red-100 text-red-800';
-      case 'Closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-blue-100 text-blue-800';
-    }
-  };
-  
-  // Format currency
+
+  // Format currency (ZAR)
+  // Update the formatCurrency function to abbreviate large numbers
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    // For large numbers (millions or more), use abbreviated format
+    if (amount >= 1000000) {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: 'ZAR',
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(amount);
+    }
+    
+    // For smaller numbers, use standard format with no decimal places for whole numbers
+    return new Intl.NumberFormat('en-ZA', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0
+      currency: 'ZAR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
-  
-  // Get event type icon
-  const getEventIcon = (type) => {
-    switch (type) {
-      case 'Training':
-        return <HiOutlineUserGroup className="h-5 w-5 text-blue-500" />;
-      case 'Meeting':
-        return <HiOutlineAnnotation className="h-5 w-5 text-purple-500" />;
-      case 'Maintenance':
-        return <HiOutlineClock className="h-5 w-5 text-yellow-500" />;
-      case 'Admin':
-        return <HiOutlineShieldCheck className="h-5 w-5 text-green-500" />;
-      default:
-        return <HiOutlineCalendar className="h-5 w-5 text-gray-500" />;
-    }
-  };
-  
-  if (loading) {
-    return (
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-          <div className="flex justify-center items-center h-64">
-            <div className="flex flex-col items-center">
-              <svg className="animate-spin h-10 w-10 text-[#800000]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span className="mt-4 text-gray-600">Loading admin dashboard...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  if (error) {
-    return (
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <HiOutlineExclamationCircle className="h-5 w-5 text-red-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">
-                  {error}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
+
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
-          <span className="text-sm text-gray-500">
-            Welcome back, {user?.firstName || 'Admin'} | {new Date().toLocaleDateString()}
-          </span>
-        </div>
+        <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
       </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="py-4">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineUserGroup className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                      <dd className="flex items-baseline">
-                        <div className="text-2xl font-semibold text-gray-900">{stats.totalUsers}</div>
-                        <div className="ml-4">
-                          <span className="text-sm text-gray-500">
-                            {stats.activeAttorneys} attorneys / {stats.activeClients} clients
-                          </span>
-                        </div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <Link to="/users" className="font-medium text-[#800000] hover:text-[#600000]">View all users</Link>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineBriefcase className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Active Cases</dt>
-                      <dd className="flex items-baseline">
-                        <div className="text-2xl font-semibold text-gray-900">{stats.activeCases}</div>
-                        <div className="ml-4">
-                          <span className="text-sm text-gray-500">of {stats.totalCases} total</span>
-                        </div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <Link to="/cases" className="font-medium text-[#800000] hover:text-[#600000]">View all cases</Link>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineCash className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Monthly Revenue</dt>
-                      <dd>
-                        <div className="text-2xl font-semibold text-gray-900">{formatCurrency(stats.revenueThisMonth)}</div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <Link to="/billing" className="font-medium text-[#800000] hover:text-[#600000]">View finances</Link>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineDocumentText className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Pending Invoices</dt>
-                      <dd>
-                        <div className="text-2xl font-semibold text-gray-900">{stats.pendingInvoices}</div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <Link to="/invoices" className="font-medium text-[#800000] hover:text-[#600000]">View invoices</Link>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Quick Actions */}
-          <div className="bg-white shadow rounded-lg mb-6">
-            <div className="px-6 py-5 border-b border-gray-200">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Quick Actions</h3>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-                <Link to="/users/new" className="text-center py-4 px-4 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                  <HiOutlineUserAdd className="h-8 w-8 text-[#800000] mx-auto" />
-                  <span className="mt-2 block text-sm font-medium text-gray-900">Add User</span>
-                </Link>
-                
-                <Link to="/cases/new" className="text-center py-4 px-4 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                  <HiOutlineDocumentAdd className="h-8 w-8 text-[#800000] mx-auto" />
-                  <span className="mt-2 block text-sm font-medium text-gray-900">Create Case</span>
-                </Link>
-                
-                <Link to="/invoices/create" className="text-center py-4 px-4 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                  <HiOutlineCash className="h-8 w-8 text-[#800000] mx-auto" />
-                  <span className="mt-2 block text-sm font-medium text-gray-900">Generate Invoice</span>
-                </Link>
-                
-                <Link to="/reports" className="text-center py-4 px-4 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                  <HiOutlineChartBar className="h-8 w-8 text-[#800000] mx-auto" />
-                  <span className="mt-2 block text-sm font-medium text-gray-900">View Reports</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-          
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* Recently Added Users */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Recently Added Users</h3>
-              </div>
-              <ul className="divide-y divide-gray-200">
-                {recentUsers.length === 0 ? (
-                  <li className="px-6 py-4 text-center text-gray-500">
-                    No recent users found
-                  </li>
-                ) : (
-                  recentUsers.map((user) => (
-                    <li key={user.id} className="px-6 py-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex-shrink-0">
-                          <img 
-                            className="h-10 w-10 rounded-full" 
-                            src={user.avatarUrl} 
-                            alt={user.name} 
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {user.name}
-                          </p>
-                          <p className="text-sm text-gray-500 truncate">
-                            {user.email}
-                          </p>
-                        </div>
-                        <div>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
-                            {user.role}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {getRelativeTime(user.createdAt)}
+          {loading ? (
+            <div className="animate-pulse">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="bg-white overflow-hidden shadow rounded-lg">
+                    <div className="p-5">
+                      <div className="flex items-center">
+                        <div className="bg-gray-200 rounded-md p-3 h-12 w-12"></div>
+                        <div className="ml-5 w-full">
+                          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                          <div className="h-8 bg-gray-200 rounded w-3/4 mt-2"></div>
                         </div>
                       </div>
-                    </li>
-                  ))
-                )}
-              </ul>
-              <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                <div className="text-sm">
-                  <Link to="/users" className="font-medium text-[#800000] hover:text-[#600000]">View all users</Link>
-                </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            
-            {/* System Alerts */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">System Alerts</h3>
-              </div>
-              <ul className="divide-y divide-gray-200">
-                {systemAlerts.length === 0 ? (
-                  <li className="px-6 py-4 text-center text-gray-500">
-                    No system alerts
-                  </li>
-                ) : (
-                  systemAlerts.map((alert) => (
-                    <li key={alert.id} className={`px-6 py-4 ${!alert.resolved ? 'bg-red-50' : ''}`}>
-                      <div className="flex items-center space-x-4">
-                        <div className="flex-shrink-0">
-                          {getAlertIcon(alert.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center">
-                            <p className="text-sm font-medium text-gray-900 truncate mr-2">
-                              {alert.title}
-                            </p>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSeverityClass(alert.severity)}`}>
-                              {alert.severity}
-                            </span>
-                            {alert.resolved && (
-                              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                <HiOutlineCheckCircle className="mr-1 h-3 w-3" />
-                                Resolved
-                              </span>
-                            )}
-                          </div>
-                          <p className="mt-1 text-sm text-gray-500">
-                            {alert.message}
-                          </p>
-                          <div className="mt-1 text-xs text-gray-500">
-                            {getRelativeTime(alert.timestamp)}
-                          </div>
-                        </div>
-                        <div>
-                          {!alert.resolved && (
-                            <button
-                              type="button"
-                              className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                            >
-                              Resolve
-                            </button>
-                          )}
-                        </div>
+          ) : (
+            <>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 bg-[#800000] bg-opacity-10 rounded-md p-3">
+                        <HiOutlineBriefcase className="h-6 w-6 text-[#800000]" />
                       </div>
-                    </li>
-                  ))
-                )}
-              </ul>
-              <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                <div className="text-sm">
-                  <Link to="/alerts" className="font-medium text-[#800000] hover:text-[#600000]">View all alerts</Link>
+                      <div className="ml-5">
+                        <p className="text-sm font-medium text-gray-500 truncate">Attorneys</p>
+                        <p className="mt-1 text-3xl font-semibold text-gray-900">{stats.attorneys}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                        <HiOutlineUsers className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div className="ml-5">
+                        <p className="text-sm font-medium text-gray-500 truncate">Clients</p>
+                        <p className="mt-1 text-3xl font-semibold text-gray-900">{stats.clients}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 bg-green-100 rounded-md p-3">
+                        <HiOutlineDocumentText className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div className="ml-5">
+                        <p className="text-sm font-medium text-gray-500 truncate">Active Cases</p>
+                        <p className="mt-1 text-3xl font-semibold text-gray-900">{stats.activeCases}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 bg-purple-100 rounded-md p-3">
+                        <HiOutlineCash className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <div className="ml-5">
+                        <p className="text-sm font-medium text-gray-500 truncate">Revenue (MTD)</p>
+                        <p className="mt-1 text-2xl md:text-3xl font-semibold text-gray-900 truncate">
+                          {formatCurrency(stats.revenue)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Recent Cases */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Cases</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Case
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Attorney
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Last Activity
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {recentCases.map((caseItem) => (
-                      <tr key={caseItem.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-[#800000]">{caseItem.title}</div>
-                          <div className="text-xs text-gray-500">{caseItem.caseNumber}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{caseItem.assignedAttorney}</div>
-                          <div className="text-xs text-gray-500">Client: {caseItem.client}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(caseItem.status)}`}>
-                            {caseItem.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(caseItem.lastActivity)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                <div className="text-sm">
-                  <Link to="/cases" className="font-medium text-[#800000] hover:text-[#600000]">View all cases</Link>
-                </div>
-              </div>
-            </div>
-            
-            {/* Upcoming Events */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Upcoming Events</h3>
-              </div>
-              <ul className="divide-y divide-gray-200">
-                {upcomingEvents.length === 0 ? (
-                  <li className="px-6 py-4 text-center text-gray-500">
-                    No upcoming events
-                  </li>
-                ) : (
-                  upcomingEvents.map((event) => (
-                    <li key={event.id} className="px-6 py-4">
-                      <div className="flex items-start space-x-4">
-                        <div className="flex-shrink-0 pt-0.5">
-                          {getEventIcon(event.type)}
+
+              {/* Activity and Performance Section */}
+              <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-5 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-medium leading-6 text-gray-900">Firm Performance</h3>
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-center py-2">
+                      <div className="w-36 text-sm font-medium text-gray-500">Case Resolution</div>
+                      <div className="flex-1 flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '78%' }}></div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center">
-                            <p className="text-sm font-medium text-gray-900 truncate mr-2">
-                              {event.title}
-                            </p>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              {event.type}
+                        <span className="ml-3 text-sm font-medium text-gray-700">78%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center py-2">
+                      <div className="w-36 text-sm font-medium text-gray-500">Client Satisfaction</div>
+                      <div className="flex-1 flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: '92%' }}></div>
+                        </div>
+                        <span className="ml-3 text-sm font-medium text-gray-700">92%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center py-2">
+                      <div className="w-36 text-sm font-medium text-gray-500">Billable Hours</div>
+                      <div className="flex-1 flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div className="bg-[#800000] h-2.5 rounded-full" style={{ width: '84%' }}></div>
+                        </div>
+                        <span className="ml-3 text-sm font-medium text-gray-700">84%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center py-2">
+                      <div className="w-36 text-sm font-medium text-gray-500">Collection Rate</div>
+                      <div className="flex-1 flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div className="bg-yellow-500 h-2.5 rounded-full" style={{ width: '76%' }}></div>
+                        </div>
+                        <span className="ml-3 text-sm font-medium text-gray-700">76%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-5 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-medium leading-6 text-gray-900">Financial Overview</h3>
+                  </div>
+                  <div className="p-5">
+                    <div className="grid grid-cols-2 gap-5">
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 bg-green-100 rounded-full p-2">
+                            <HiOutlineArrowUp className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-500">Total Revenue</p>
+                            <p className="text-xl font-semibold text-gray-900">{formatCurrency(stats.revenue)}</p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm text-green-600">+8.2% from last month</p>
+                      </div>
+                      
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 bg-yellow-100 rounded-full p-2">
+                            <HiOutlineExclamation className="h-5 w-5 text-yellow-600" />
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-500">Pending Invoices</p>
+                            <p className="text-xl font-semibold text-gray-900">{formatCurrency(stats.pendingInvoices)}</p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm text-yellow-600">25 invoices pending</p>
+                      </div>
+                      
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 bg-[#800000] bg-opacity-10 rounded-full p-2">
+                            <HiOutlineClock className="h-5 w-5 text-[#800000]" />
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-500">Billable Hours</p>
+                            <p className="text-xl font-semibold text-gray-900">1,846 hrs</p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm text-[#800000]">This month</p>
+                      </div>
+                      
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 bg-blue-100 rounded-full p-2">
+                            <HiOutlineScale className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-500">Avg. Hourly Rate</p>
+                            <p className="text-xl font-semibold text-gray-900">{formatCurrency(1250)}</p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm text-blue-600">+R150 from last quarter</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Activity Section */}
+              <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-3">
+                <div className="col-span-2 bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 className="text-lg font-medium leading-6 text-gray-900">Recent Activity</h3>
+                    <button className="text-sm font-medium text-[#800000] hover:text-[#600000]">View all</button>
+                  </div>
+                  <div className="p-5">
+                    <ul className="divide-y divide-gray-200">
+                      <li className="py-3">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 bg-blue-100 rounded-full p-1">
+                            <HiOutlineDocumentText className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-900">New case opened: Smith v. Johnson & Co.</p>
+                            <p className="text-sm text-gray-500">Assigned to: John Doe</p>
+                            <p className="text-xs text-gray-400 mt-1">Today at 09:32</p>
+                          </div>
+                        </div>
+                      </li>
+                      <li className="py-3">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 bg-green-100 rounded-full p-1">
+                            <HiOutlineCash className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-900">Invoice #INV-2023-045 paid</p>
+                            <p className="text-sm text-gray-500">Amount: {formatCurrency(28500)}</p>
+                            <p className="text-xs text-gray-400 mt-1">Yesterday at 15:47</p>
+                          </div>
+                        </div>
+                      </li>
+                      <li className="py-3">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 bg-[#800000] bg-opacity-10 rounded-full p-1">
+                            <HiOutlineUsers className="h-5 w-5 text-[#800000]" />
+                          </div>
+                          <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-900">New client onboarded: Cape Tech Ventures</p>
+                            <p className="text-sm text-gray-500">Client ID: CT-2023-042</p>
+                            <p className="text-xs text-gray-400 mt-1">2 days ago</p>
+                          </div>
+                        </div>
+                      </li>
+                      <li className="py-3">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 bg-purple-100 rounded-full p-1">
+                            <HiOutlineDocumentDuplicate className="h-5 w-5 text-purple-600" />
+                          </div>
+                          <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-900">Document template updated: Fee Agreement</p>
+                            <p className="text-sm text-gray-500">Updated by: Sarah Adams</p>
+                            <p className="text-xs text-gray-400 mt-1">3 days ago</p>
+                          </div>
+                        </div>
+                      </li>
+                      <li className="py-3">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 bg-yellow-100 rounded-full p-1">
+                            <HiOutlineCalendar className="h-5 w-5 text-yellow-600" />
+                          </div>
+                          <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-900">Staff meeting scheduled</p>
+                            <p className="text-sm text-gray-500">Date: June 10, 2023 at 14:00</p>
+                            <p className="text-xs text-gray-400 mt-1">3 days ago</p>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-5 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-medium leading-6 text-gray-900">Upcoming Events</h3>
+                  </div>
+                  <div className="p-5">
+                    <ul className="divide-y divide-gray-200">
+                      <li className="py-3">
+                        <div className="flex items-center">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">Board Meeting</p>
+                            <p className="text-sm text-gray-500">Tomorrow, 10:00 - 12:00</p>
+                          </div>
+                          <div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Management
                             </span>
                           </div>
-                          <p className="mt-1 text-sm text-gray-500">
-                            {event.description}
-                          </p>
                         </div>
-                        <div className="flex-shrink-0 text-right">
-                          <p className="text-sm font-medium text-gray-900">
-                            {formatDate(event.date)}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {event.time}
-                          </p>
+                      </li>
+                      <li className="py-3">
+                        <div className="flex items-center">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">Smith v. Johnson Court Hearing</p>
+                            <p className="text-sm text-gray-500">Jun 8, 14:30 - 16:30</p>
+                          </div>
+                          <div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#800000] bg-opacity-10 text-[#800000]">
+                              Court
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </li>
-                  ))
-                )}
-              </ul>
-              <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                <div className="text-sm">
-                  <Link to="/calendar" className="font-medium text-[#800000] hover:text-[#600000]">View calendar</Link>
+                      </li>
+                      <li className="py-3">
+                        <div className="flex items-center">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">Staff Training: New Case Management System</p>
+                            <p className="text-sm text-gray-500">Jun 12, 09:00 - 13:00</p>
+                          </div>
+                          <div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Training
+                            </span>
+                          </div>
+                        </div>
+                      </li>
+                      <li className="py-3">
+                        <div className="flex items-center">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">Client Meeting: Stellenbosch Winery</p>
+                            <p className="text-sm text-gray-500">Jun 15, 11:00 - 12:30</p>
+                          </div>
+                          <div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              Client
+                            </span>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                    <div className="mt-5">
+                      <button className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        View All Events
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>

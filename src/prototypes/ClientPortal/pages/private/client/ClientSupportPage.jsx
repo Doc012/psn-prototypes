@@ -17,7 +17,8 @@ import {
   HiOutlinePencilAlt,
   HiOutlineSearch,
   HiOutlineX,
-  HiOutlinePlus
+  HiOutlinePlus,
+  HiOutlineShieldCheck
 } from 'react-icons/hi';
 
 const ClientSupportPage = () => {

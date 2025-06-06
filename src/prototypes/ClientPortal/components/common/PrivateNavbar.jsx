@@ -45,7 +45,7 @@ const PrivateNavbar = ({ openSidebar }) => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      navigate('/client-portal/login');
     } catch (error) {
       console.error('Logout failed', error);
     }
@@ -165,7 +165,7 @@ const PrivateNavbar = ({ openSidebar }) => {
                   <span className="sr-only">Open user menu</span>
                   <img
                     className="h-8 w-8 rounded-full border border-gray-300"
-                    src={currentUser?.avatar || "https://via.placeholder.com/40"}
+                    src={currentUser?.avatar || "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?semt=ais_hybrid&w=740"}
                     alt="User avatar"
                   />
                   <div className="hidden md:flex md:flex-col md:items-start">

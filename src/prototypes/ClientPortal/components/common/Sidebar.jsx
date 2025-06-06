@@ -17,7 +17,11 @@ import {
   HiOutlineUser,
   HiOutlineChartBar,
   HiOutlineShieldCheck,
-  HiOutlineQuestionMarkCircle
+  HiOutlineQuestionMarkCircle,
+  HiOutlineOfficeBuilding,
+  HiOutlineBriefcase,
+  HiOutlineCash,
+  HiOutlineLogout, // Add this import
 } from 'react-icons/hi';
 
 const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
@@ -29,65 +33,51 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
     return location.pathname === href || location.pathname.startsWith(`${href}/`);
   };
 
+  // Fix for the navItems with unique keys
   // Define navigation items based on user role
   let navItems = [];
-
-  // First link is always dashboard based on role
-  if (userRole === 'admin') {
-    navItems.push({ 
-      name: 'Dashboard', 
-      href: '/client-portal/admin/dashboard', 
-      icon: HiOutlineHome 
-    });
-  } else if (userRole === 'attorney') {
-    navItems.push({ 
-      name: 'Dashboard', 
-      href: '/client-portal/attorney/dashboard', 
-      icon: HiOutlineHome 
-    });
-  } else {
-    navItems.push({ 
-      name: 'Dashboard', 
-      href: '/client-portal/dashboard', 
-      icon: HiOutlineHome 
-    });
-  }
-
-  // Add role-specific navigation items
-  if (userRole === 'admin') {
+  
+  if (userRole === 'attorney') {
     navItems = [
-      ...navItems,
-      { name: 'User Management', href: '/client-portal/admin/users', icon: HiOutlineUserGroup },
-      { name: 'System Settings', href: '/client-portal/admin/settings', icon: HiOutlineCog },
-      { name: 'Reports', href: '/client-portal/admin/reports', icon: HiOutlineChartBar },
-      { name: 'Audit Logs', href: '/client-portal/admin/audit-logs', icon: HiOutlineShieldCheck },
-    ];
-  } else if (userRole === 'attorney') {
+      { id: 'attorney-dashboard', name: 'Dashboard', href: '/client-portal/attorney/dashboard', icon: HiOutlineHome },
+      { id: 'attorney-cases', name: 'Cases', href: '/client-portal/attorney/cases', icon: HiOutlineDocumentText },
+      { id: 'attorney-clients', name: 'Clients', href: '/client-portal/attorney/clients', icon: HiOutlineUserGroup },
+      { id: 'attorney-documents', name: 'Documents', href: '/client-portal/attorney/documents', icon: HiOutlineDocumentDuplicate },
+      { id: 'attorney-messages', name: 'Messages', href: '/client-portal/attorney/messages', icon: HiOutlineChatAlt },
+      { id: 'attorney-billing', name: 'Billing', href: '/client-portal/attorney/billing', icon: HiOutlineClipboardCheck },
+      { id: 'attorney-time-tracking', name: 'Time Tracking', href: '/client-portal/attorney/time-tracking', icon: HiOutlineClock },
+      { id: 'attorney-calendar', name: 'Calendar', href: '/client-portal/attorney/calendar', icon: HiOutlineCalendar },
+      { id: 'attorney-profile', name: 'Profile', href: '/client-portal/attorney/profile', icon: HiOutlineUser },
+     ];
+  } else if (userRole === 'admin') {
     navItems = [
-      ...navItems,
-      { name: 'Cases', href: '/client-portal/attorney/cases', icon: HiOutlineDocumentText },
-      { name: 'Clients', href: '/client-portal/attorney/clients', icon: HiOutlineUserGroup },
-      { name: 'Time Tracking', href: '/client-portal/attorney/time-tracking', icon: HiOutlineClock },
-      { name: 'Billing', href: '/client-portal/attorney/billing', icon: HiOutlineClipboardCheck },
+      { id: 'admin-dashboard', name: 'Dashboard', href: '/client-portal/admin/dashboard', icon: HiOutlineHome },
+      { id: 'admin-firm', name: 'Firm Management', href: '/client-portal/admin/firm', icon: HiOutlineOfficeBuilding },
+      { id: 'admin-attorneys', name: 'Attorneys', href: '/client-portal/admin/attorneys', icon: HiOutlineBriefcase },
+      { id: 'admin-clients', name: 'Clients', href: '/client-portal/admin/clients', icon: HiOutlineUserGroup },
+      { id: 'admin-cases', name: 'Cases', href: '/client-portal/admin/cases', icon: HiOutlineDocumentText },
+      { id: 'admin-billing', name: 'Billing & Finance', href: '/client-portal/admin/billing', icon: HiOutlineCash },
+      { id: 'admin-documents', name: 'Document Center', href: '/client-portal/admin/documents', icon: HiOutlineDocumentDuplicate },
+      { id: 'admin-time', name: 'Time & Activities', href: '/client-portal/admin/time', icon: HiOutlineClock },
+      { id: 'admin-reports', name: 'Reports & Analytics', href: '/client-portal/admin/reports', icon: HiOutlineChartBar },
+      { id: 'admin-calendar', name: 'Calendar', href: '/client-portal/admin/calendar', icon: HiOutlineCalendar },
+      { id: 'admin-security', name: 'Security', href: '/client-portal/admin/security', icon: HiOutlineShieldCheck },
+      { id: 'admin-settings', name: 'System Settings', href: '/client-portal/admin/settings', icon: HiOutlineCog },
+      { id: 'admin-profile', name: 'Profile', href: '/client-portal/admin/profile', icon: HiOutlineUser },
     ];
   } else {
-    // Client navigation
+    // Default client navigation
     navItems = [
-      ...navItems,
-      { name: 'My Cases', href: '/client-portal/cases', icon: HiOutlineDocumentText },
-      { name: 'Invoices', href: '/client-portal/invoices', icon: HiOutlineClipboardCheck },
+      { id: 'client-dashboard', name: 'Dashboard', href: '/client-portal/dashboard', icon: HiOutlineHome },
+      { id: 'client-cases', name: 'Cases', href: '/client-portal/cases', icon: HiOutlineDocumentText },
+      { id: 'client-messages', name: 'Messages', href: '/client-portal/messages', icon: HiOutlineChatAlt },
+      { id: 'client-documents', name: 'Documents', href: '/client-portal/documents', icon: HiOutlineDocumentDuplicate },
+      { id: 'client-calendar', name: 'Calendar', href: '/client-portal/calendar', icon: HiOutlineCalendar },
+      { id: 'client-invoices', name: 'Invoices', href: '/client-portal/invoices', icon: HiOutlineClipboardCheck },
+      { id: 'client-profile', name: 'Profile', href: '/client-portal/profile', icon: HiOutlineUser },
+      { id: 'client-support', name: 'Support', href: '/client-portal/support', icon: HiOutlineQuestionMarkCircle },
     ];
   }
-
-  // Add shared navigation items for all roles
-  navItems = [
-    ...navItems,
-    { name: 'Messages', href: '/client-portal/messages', icon: HiOutlineChatAlt },
-    { name: 'Documents', href: '/client-portal/documents', icon: HiOutlineDocumentDuplicate },
-    { name: 'Calendar', href: '/client-portal/calendar', icon: HiOutlineCalendar },
-    { name: 'Profile', href: '/client-portal/profile', icon: HiOutlineUser },
-    { name: 'Support', href: '/client-portal/support', icon: HiOutlineQuestionMarkCircle },
-  ];
 
   // Animation variants
   const sidebarVariants = {
@@ -118,7 +108,7 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
               alt="PSN Attorneys"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "https://via.placeholder.com/32x32?text=PSN";
+                e.target.src = "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?semt=ais_hybrid&w=740";
               }}
             />
             {!isCollapsed && (
@@ -142,12 +132,12 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
 
         {/* Navigation items */}
         <nav className="flex-1 px-2 py-4 bg-white space-y-1 overflow-y-auto">
-          {navItems.map((item, index) => {
+          {navItems.map((item) => {
             const active = isLinkActive(item.href);
             
             return (
               <NavLink
-                key={item.name}
+                key={item.id}  // Use the unique id as key instead of name
                 to={item.href}
                 className={`group flex items-center px-2 py-2 text-base font-medium rounded-md transition-all duration-300 ${
                   active
@@ -207,13 +197,30 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
                 </span>
               </motion.div>
             )}
-            <Link
+            {/* <Link
               to="/client-portal/profile"
               className={`flex items-center justify-center p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-300`}
               title="Settings"
             >
               <HiOutlineCog className="h-5 w-5" />
-            </Link>
+            </Link> */}
+          </div>
+          {/* Logout button */}
+          <div className="mt-4">
+            <button
+              onClick={() => {
+                // You can add your logout logic here
+                // For example: logout() if you have a logout function in your auth context
+                if (window.confirm('Are you sure you want to log out?')) {
+                  // Navigate to login page or call logout function from auth context
+                  window.location.href = '/client-portal/login';
+                }
+              }}
+              className={`flex items-center justify-center p-2 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all duration-300`}
+              title="Log out"
+            >
+              <HiOutlineLogout className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </div>

@@ -17,7 +17,7 @@ const PublicNavbar = () => {
               <Link to="/" className="flex items-center">
                 <img
                   className="h-8 w-auto"
-                  src="/logo.png"
+                  src="https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?semt=ais_hybrid&w=740"
                   alt="PSN Attorneys"
                 />
                 <span className="ml-2 text-xl font-bold text-[#800000]">PSN Portal</span>

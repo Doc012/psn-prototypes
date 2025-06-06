@@ -26,10 +26,22 @@ import {
   HiOutlineAdjustments,
   HiOutlineDocumentDuplicate,
   HiOutlineSortAscending,
-  HiOutlineSortDescending
+  HiOutlineSortDescending,
+  HiOutlineCloudUpload,
+  HiOutlineExternalLink,
+  HiOutlineInformationCircle,
+  HiOutlineLockClosed,
+  HiOutlineDocumentAdd,
+  HiOutlineOfficeBuilding,
+  HiOutlineCollection,
+  HiOutlineQuestionMarkCircle,
+  HiOutlineUserCircle,
+  HiOutlineCalendar
 } from 'react-icons/hi';
+import { useAuth } from '../../../context/AuthContext';
 
 const ClientDocumentsPage = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
@@ -50,20 +62,54 @@ const ClientDocumentsPage = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadFiles, setUploadFiles] = useState([]);
+  const [showFileSizeWarning, setShowFileSizeWarning] = useState(false);
+  const [documentCounts, setDocumentCounts] = useState({
+    total: 0,
+    needsAction: 0,
+    shared: 0
+  });
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [selectedCase, setSelectedCase] = useState('');
+  const [showDetailSidebar, setShowDetailSidebar] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState('documents'); // 'documents' or 'folders'
+  
   const fileInputRef = useRef(null);
+  const searchInputRef = useRef(null);
+  
+  // Get current date for realistic timestamps
+  const currentYear = new Date().getFullYear();
+  const today = new Date();
+  const lastWeek = new Date(today);
+  lastWeek.setDate(today.getDate() - 7);
+  const lastMonth = new Date(today);
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const twoMonthsAgo = new Date(today);
+  twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+  const threeMonthsAgo = new Date(today);
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
   
   // All available tags
   const [allTags, setAllTags] = useState([]);
   
   // Folders
   const [folders, setFolders] = useState([
-    { id: 'all', name: 'All Documents', count: 0 },
-    { id: 'case-documents', name: 'Case Documents', count: 0 },
-    { id: 'contracts', name: 'Contracts', count: 0 },
-    { id: 'court-filings', name: 'Court Filings', count: 0 },
-    { id: 'personal-documents', name: 'Personal Documents', count: 0 },
-    { id: 'needs-review', name: 'Needs Review', count: 0 },
-    { id: 'needs-signature', name: 'Needs Signature', count: 0 },
+    { id: 'all', name: 'All Documents', count: 0, icon: <HiOutlineCollection /> },
+    { id: 'case-documents', name: 'Case Documents', count: 0, icon: <HiOutlineFolder /> },
+    { id: 'contracts', name: 'Contracts', count: 0, icon: <HiOutlineDocumentText /> },
+    { id: 'court-filings', name: 'Court Filings', count: 0, icon: <HiOutlineOfficeBuilding /> },
+    { id: 'personal-documents', name: 'Personal Documents', count: 0, icon: <HiOutlineUserCircle /> },
+    { id: 'needs-review', name: 'Needs Review', count: 0, icon: <HiOutlineEye /> },
+    { id: 'needs-signature', name: 'Needs Signature', count: 0, icon: <HiOutlinePencilAlt /> },
+    { id: 'shared-with-me', name: 'Shared With Me', count: 0, icon: <HiOutlineShare /> },
+  ]);
+  
+  // Available cases
+  const [cases, setCases] = useState([
+    { id: 'smith-johnson', name: 'Smith v. Johnson', number: `PI-${currentYear}-1452` },
+    { id: 'brown-contract', name: 'Brown LLC Contract', number: `CL-${currentYear}-0251` },
+    { id: 'estate-planning', name: 'Estate Planning', number: `EP-${currentYear}-0342` },
+    { id: 'jones-divorce', name: 'Jones Divorce', number: `FL-${currentYear}-0592` }
   ]);
   
   // Fetch documents
@@ -79,15 +125,25 @@ const ClientDocumentsPage = () => {
             description: 'Final settlement agreement for Smith v. Johnson case',
             size: '1.2 MB',
             type: 'application/pdf',
-            uploadDate: '2023-05-20T14:30:00',
-            uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney' },
+            uploadDate: today.toISOString(),
+            uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
             status: 'Needs Review',
-            caseRef: 'Smith v. Johnson',
+            caseRef: { id: 'smith-johnson', name: 'Smith v. Johnson', number: `PI-${currentYear}-1452` },
             tags: ['settlement', 'agreement', 'personal injury'],
-            lastViewed: '2023-05-21T10:15:00',
+            lastViewed: new Date(today.setHours(today.getHours() - 2)).toISOString(),
             starred: false,
             version: 1,
-            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf'
+            versionHistory: [
+              { version: 1, date: today.toISOString(), uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney' } }
+            ],
+            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf',
+            sharedWith: [],
+            comments: [
+              { id: 1, author: { id: 456, name: 'Sarah Wilson', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' }, content: 'Please review this settlement agreement as soon as possible.', timestamp: new Date(today.setHours(today.getHours() - 1)).toISOString() }
+            ],
+            needsAction: true,
+            actionType: 'review',
+            actionDeadline: new Date(today.setDate(today.getDate() + 3)).toISOString()
           },
           {
             id: 2,
@@ -96,15 +152,24 @@ const ClientDocumentsPage = () => {
             description: 'Compiled medical records for personal injury claim',
             size: '5.4 MB',
             type: 'application/pdf',
-            uploadDate: '2023-05-15T10:45:00',
-            uploadedBy: { id: 123, name: 'John Doe', role: 'client' },
+            uploadDate: lastWeek.toISOString(),
+            uploadedBy: { id: 123, name: user?.displayName || 'John Doe', role: 'client', avatar: null },
             status: 'Approved',
-            caseRef: 'Smith v. Johnson',
+            caseRef: { id: 'smith-johnson', name: 'Smith v. Johnson', number: `PI-${currentYear}-1452` },
             tags: ['medical', 'records', 'personal injury'],
-            lastViewed: '2023-05-19T14:30:00',
+            lastViewed: new Date(today.setHours(today.getHours() - 5)).toISOString(),
             starred: true,
             version: 2,
-            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf'
+            versionHistory: [
+              { version: 1, date: new Date(lastWeek.setDate(lastWeek.getDate() - 2)).toISOString(), uploadedBy: { id: 123, name: user?.displayName || 'John Doe', role: 'client' } },
+              { version: 2, date: lastWeek.toISOString(), uploadedBy: { id: 123, name: user?.displayName || 'John Doe', role: 'client' } }
+            ],
+            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf',
+            sharedWith: [
+              { id: 456, name: 'Sarah Wilson', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' }
+            ],
+            comments: [],
+            needsAction: false
           },
           {
             id: 3,
@@ -113,15 +178,21 @@ const ClientDocumentsPage = () => {
             description: 'Signed power of attorney document',
             size: '875 KB',
             type: 'application/pdf',
-            uploadDate: '2023-05-12T09:20:00',
-            uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney' },
+            uploadDate: lastMonth.toISOString(),
+            uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
             status: 'Approved',
             caseRef: null,
             tags: ['legal', 'power of attorney'],
-            lastViewed: '2023-05-18T09:45:00',
+            lastViewed: new Date(lastWeek.setDate(lastWeek.getDate() - 5)).toISOString(),
             starred: false,
             version: 1,
-            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf'
+            versionHistory: [
+              { version: 1, date: lastMonth.toISOString(), uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney' } }
+            ],
+            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf',
+            sharedWith: [],
+            comments: [],
+            needsAction: false
           },
           {
             id: 4,
@@ -130,15 +201,27 @@ const ClientDocumentsPage = () => {
             description: 'Draft contract for Brown LLC',
             size: '320 KB',
             type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            uploadDate: '2023-05-10T16:15:00',
-            uploadedBy: { id: 789, name: 'Michael Brown', role: 'attorney' },
+            uploadDate: lastMonth.toISOString(),
+            uploadedBy: { id: 789, name: 'Michael Brown', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
             status: 'Needs Signature',
-            caseRef: 'Brown LLC Contract',
+            caseRef: { id: 'brown-contract', name: 'Brown LLC Contract', number: `CL-${currentYear}-0251` },
             tags: ['contract', 'draft', 'business'],
-            lastViewed: '2023-05-17T11:20:00',
+            lastViewed: new Date(today.setDate(today.getDate() - 10)).toISOString(),
             starred: false,
             version: 3,
-            previewUrl: null
+            versionHistory: [
+              { version: 1, date: new Date(lastMonth.setDate(lastMonth.getDate() - 10)).toISOString(), uploadedBy: { id: 789, name: 'Michael Brown', role: 'attorney' } },
+              { version: 2, date: new Date(lastMonth.setDate(lastMonth.getDate() - 5)).toISOString(), uploadedBy: { id: 789, name: 'Michael Brown', role: 'attorney' } },
+              { version: 3, date: lastMonth.toISOString(), uploadedBy: { id: 789, name: 'Michael Brown', role: 'attorney' } }
+            ],
+            previewUrl: null,
+            sharedWith: [],
+            comments: [
+              { id: 2, author: { id: 789, name: 'Michael Brown', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' }, content: 'This contract requires your signature.', timestamp: new Date(lastMonth.setHours(lastMonth.getHours() + 2)).toISOString() }
+            ],
+            needsAction: true,
+            actionType: 'signature',
+            actionDeadline: new Date(today.setDate(today.getDate() + 5)).toISOString()
           },
           {
             id: 5,
@@ -147,15 +230,21 @@ const ClientDocumentsPage = () => {
             description: 'Witness statement for Smith v. Johnson case',
             size: '198 KB',
             type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            uploadDate: '2023-05-08T11:30:00',
-            uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney' },
+            uploadDate: twoMonthsAgo.toISOString(),
+            uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
             status: 'Approved',
-            caseRef: 'Smith v. Johnson',
+            caseRef: { id: 'smith-johnson', name: 'Smith v. Johnson', number: `PI-${currentYear}-1452` },
             tags: ['witness', 'statement', 'personal injury'],
             lastViewed: null,
             starred: false,
             version: 1,
-            previewUrl: null
+            versionHistory: [
+              { version: 1, date: twoMonthsAgo.toISOString(), uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney' } }
+            ],
+            previewUrl: null,
+            sharedWith: [],
+            comments: [],
+            needsAction: false
           },
           {
             id: 6,
@@ -164,15 +253,21 @@ const ClientDocumentsPage = () => {
             description: 'Motion to dismiss filed with court',
             size: '1.8 MB',
             type: 'application/pdf',
-            uploadDate: '2023-05-05T13:45:00',
-            uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney' },
+            uploadDate: twoMonthsAgo.toISOString(),
+            uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
             status: 'Approved',
-            caseRef: 'Smith v. Johnson',
+            caseRef: { id: 'smith-johnson', name: 'Smith v. Johnson', number: `PI-${currentYear}-1452` },
             tags: ['court', 'motion', 'filing'],
-            lastViewed: '2023-05-15T16:10:00',
+            lastViewed: new Date(lastWeek.setDate(lastWeek.getDate() - 2)).toISOString(),
             starred: true,
             version: 1,
-            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf'
+            versionHistory: [
+              { version: 1, date: twoMonthsAgo.toISOString(), uploadedBy: { id: 456, name: 'Sarah Wilson', role: 'attorney' } }
+            ],
+            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf',
+            sharedWith: [],
+            comments: [],
+            needsAction: false
           },
           {
             id: 7,
@@ -181,15 +276,76 @@ const ClientDocumentsPage = () => {
             description: 'Draft estate planning documents',
             size: '3.2 MB',
             type: 'application/pdf',
-            uploadDate: '2023-05-01T15:30:00',
-            uploadedBy: { id: 101, name: 'Jessica Taylor', role: 'attorney' },
+            uploadDate: threeMonthsAgo.toISOString(),
+            uploadedBy: { id: 101, name: 'Jessica Taylor', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/women/68.jpg' },
             status: 'Needs Review',
-            caseRef: 'Estate Planning',
+            caseRef: { id: 'estate-planning', name: 'Estate Planning', number: `EP-${currentYear}-0342` },
             tags: ['estate', 'planning', 'will', 'trust'],
-            lastViewed: '2023-05-02T10:00:00',
+            lastViewed: new Date(lastMonth.setDate(lastMonth.getDate() - 5)).toISOString(),
             starred: false,
             version: 2,
-            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf'
+            versionHistory: [
+              { version: 1, date: new Date(threeMonthsAgo.setDate(threeMonthsAgo.getDate() - 5)).toISOString(), uploadedBy: { id: 101, name: 'Jessica Taylor', role: 'attorney' } },
+              { version: 2, date: threeMonthsAgo.toISOString(), uploadedBy: { id: 101, name: 'Jessica Taylor', role: 'attorney' } }
+            ],
+            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf',
+            sharedWith: [],
+            comments: [
+              { id: 3, author: { id: 101, name: 'Jessica Taylor', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/women/68.jpg' }, content: 'Please review the updates to your estate plan.', timestamp: threeMonthsAgo.toISOString() }
+            ],
+            needsAction: true,
+            actionType: 'review',
+            actionDeadline: new Date(today.setDate(today.getDate() + 7)).toISOString()
+          },
+          {
+            id: 8,
+            name: 'Financial Disclosure.pdf',
+            folder: 'case-documents',
+            description: 'Financial disclosure for Jones divorce proceedings',
+            size: '2.7 MB',
+            type: 'application/pdf',
+            uploadDate: new Date(today.setDate(today.getDate() - 14)).toISOString(),
+            uploadedBy: { id: 123, name: user?.displayName || 'John Doe', role: 'client', avatar: null },
+            status: 'Approved',
+            caseRef: { id: 'jones-divorce', name: 'Jones Divorce', number: `FL-${currentYear}-0592` },
+            tags: ['financial', 'divorce', 'disclosure'],
+            lastViewed: new Date(today.setHours(today.getHours() - 36)).toISOString(),
+            starred: false,
+            version: 1,
+            versionHistory: [
+              { version: 1, date: new Date(today.setDate(today.getDate() - 14)).toISOString(), uploadedBy: { id: 123, name: user?.displayName || 'John Doe', role: 'client' } }
+            ],
+            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf',
+            sharedWith: [
+              { id: 202, name: 'Michael Patel', role: 'attorney', avatar: 'https://randomuser.me/api/portraits/men/56.jpg' }
+            ],
+            comments: [],
+            needsAction: false
+          },
+          {
+            id: 9,
+            name: 'Insurance Policy.pdf',
+            folder: 'shared-with-me',
+            description: 'Insurance policy documentation shared by insurance company',
+            size: '4.1 MB',
+            type: 'application/pdf',
+            uploadDate: new Date(today.setDate(today.getDate() - 5)).toISOString(),
+            uploadedBy: { id: 303, name: 'Insurance Co.', role: 'external', avatar: null },
+            status: 'Approved',
+            caseRef: { id: 'smith-johnson', name: 'Smith v. Johnson', number: `PI-${currentYear}-1452` },
+            tags: ['insurance', 'policy', 'external'],
+            lastViewed: null,
+            starred: false,
+            version: 1,
+            versionHistory: [
+              { version: 1, date: new Date(today.setDate(today.getDate() - 5)).toISOString(), uploadedBy: { id: 303, name: 'Insurance Co.', role: 'external' } }
+            ],
+            previewUrl: 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf',
+            sharedWith: [],
+            comments: [],
+            needsAction: true,
+            actionType: 'review',
+            actionDeadline: new Date(today.setDate(today.getDate() + 2)).toISOString()
           }
         ];
         
@@ -204,6 +360,22 @@ const ClientDocumentsPage = () => {
           .slice(0, 3);
         setRecentlyViewed(recentDocs);
         
+        // Set document counts
+        setDocumentCounts({
+          total: mockDocuments.length,
+          needsAction: mockDocuments.filter(doc => doc.needsAction).length,
+          shared: mockDocuments.filter(doc => doc.sharedWith && doc.sharedWith.length > 0).length
+        });
+        
+        // Add mock search suggestions
+        setSearchSuggestions([
+          { type: 'tag', value: 'settlement' },
+          { type: 'tag', value: 'medical' },
+          { type: 'document', value: 'Settlement Agreement.pdf' },
+          { type: 'document', value: 'Medical Records.pdf' },
+          { type: 'case', value: 'Smith v. Johnson' }
+        ]);
+        
         setDocuments(mockDocuments);
         setFilteredDocuments(mockDocuments);
         setLoading(false);
@@ -214,20 +386,28 @@ const ClientDocumentsPage = () => {
     };
     
     fetchDocuments();
-  }, []);
+  }, [user]);
   
   // Update folder counts
-  const folderCounts = folders.map(folder => {
-    if (folder.id === 'all') {
-      return { ...folder, count: documents.length };
-    } else if (folder.id === 'needs-review') {
-      return { ...folder, count: documents.filter(doc => doc.status === 'Needs Review').length };
-    } else if (folder.id === 'needs-signature') {
-      return { ...folder, count: documents.filter(doc => doc.status === 'Needs Signature').length };
-    } else {
-      return { ...folder, count: documents.filter(doc => doc.folder === folder.id).length };
+  useEffect(() => {
+    if (documents.length > 0) {
+      const folderCounts = folders.map(folder => {
+        if (folder.id === 'all') {
+          return { ...folder, count: documents.length };
+        } else if (folder.id === 'needs-review') {
+          return { ...folder, count: documents.filter(doc => doc.status === 'Needs Review').length };
+        } else if (folder.id === 'needs-signature') {
+          return { ...folder, count: documents.filter(doc => doc.status === 'Needs Signature').length };
+        } else if (folder.id === 'shared-with-me') {
+          return { ...folder, count: documents.filter(doc => doc.uploadedBy.role === 'external').length };
+        } else {
+          return { ...folder, count: documents.filter(doc => doc.folder === folder.id).length };
+        }
+      });
+      
+      setFolders(folderCounts);
     }
-  });
+  }, [documents]);
   
   // Filter and sort documents
   useEffect(() => {
@@ -239,9 +419,16 @@ const ClientDocumentsPage = () => {
         filtered = filtered.filter(doc => doc.status === 'Needs Review');
       } else if (selectedFolder === 'needs-signature') {
         filtered = filtered.filter(doc => doc.status === 'Needs Signature');
+      } else if (selectedFolder === 'shared-with-me') {
+        filtered = filtered.filter(doc => doc.uploadedBy.role === 'external');
       } else {
         filtered = filtered.filter(doc => doc.folder === selectedFolder);
       }
+    }
+    
+    // Apply case filter
+    if (selectedCase) {
+      filtered = filtered.filter(doc => doc.caseRef && doc.caseRef.id === selectedCase);
     }
     
     // Apply search filter
@@ -250,7 +437,7 @@ const ClientDocumentsPage = () => {
       filtered = filtered.filter(doc => 
         doc.name.toLowerCase().includes(term) ||
         (doc.description && doc.description.toLowerCase().includes(term)) ||
-        (doc.caseRef && doc.caseRef.toLowerCase().includes(term)) ||
+        (doc.caseRef && doc.caseRef.name.toLowerCase().includes(term)) ||
         doc.tags.some(tag => tag.toLowerCase().includes(term))
       );
     }
@@ -323,8 +510,38 @@ const ClientDocumentsPage = () => {
     });
     
     setFilteredDocuments(filtered);
-  }, [documents, selectedFolder, searchTerm, sortField, sortDirection, selectedTags, dateFilter]);
+  }, [documents, selectedFolder, searchTerm, sortField, sortDirection, selectedTags, dateFilter, selectedCase]);
   
+  // Handle search input
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    if (value.length > 1) {
+      setShowSearchSuggestions(true);
+    } else {
+      setShowSearchSuggestions(false);
+    }
+  };
+  
+  // Handle search suggestion click
+  const handleSearchSuggestionClick = (suggestion) => {
+    setSearchTerm(suggestion.value);
+    setShowSearchSuggestions(false);
+    
+    if (suggestion.type === 'tag') {
+      if (!selectedTags.includes(suggestion.value)) {
+        setSelectedTags([...selectedTags, suggestion.value]);
+      }
+    } else if (suggestion.type === 'case') {
+      const caseItem = cases.find(c => c.name === suggestion.value);
+      if (caseItem) {
+        setSelectedCase(caseItem.id);
+      }
+    }
+  };
+  
+  // Handle sort
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -334,6 +551,7 @@ const ClientDocumentsPage = () => {
     }
   };
   
+  // Get document icon based on file type
   const getDocumentIcon = (type) => {
     if (type.includes('pdf')) {
       return <HiOutlineDocumentText className="h-10 w-10 text-red-500" />;
@@ -348,6 +566,7 @@ const ClientDocumentsPage = () => {
     }
   };
   
+  // Get status color based on status
   const getStatusColor = (status) => {
     switch (status) {
       case 'Approved':
@@ -358,6 +577,28 @@ const ClientDocumentsPage = () => {
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  // Format date to relative format
+  const formatRelativeDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else if (diffDays < 30) {
+      return `${Math.floor(diffDays / 7)} weeks ago`;
+    } else if (diffDays < 365) {
+      return `${Math.floor(diffDays / 30)} months ago`;
+    } else {
+      return `${Math.floor(diffDays / 365)} years ago`;
     }
   };
   
@@ -437,7 +678,8 @@ const ClientDocumentsPage = () => {
     const newFolder = {
       id: newFolderName.toLowerCase().replace(/\s+/g, '-'),
       name: newFolderName,
-      count: 0
+      count: 0,
+      icon: <HiOutlineFolder />
     };
     
     setFolders(prev => [...prev, newFolder]);
@@ -449,6 +691,13 @@ const ClientDocumentsPage = () => {
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
+    
+    // Check if any file is too large (>10MB for demo)
+    const oversizedFile = files.find(file => file.size > 10 * 1024 * 1024);
+    if (oversizedFile) {
+      setShowFileSizeWarning(true);
+      return;
+    }
     
     setUploadFiles(files);
     setIsUploading(true);
@@ -471,14 +720,25 @@ const ClientDocumentsPage = () => {
           size: `${(file.size / 1024).toFixed(1)} KB`,
           type: file.type,
           uploadDate: new Date().toISOString(),
-          uploadedBy: { id: 123, name: 'John Doe', role: 'client' },
+          uploadedBy: { 
+            id: 123, 
+            name: user?.displayName || 'John Doe', 
+            role: 'client', 
+            avatar: null 
+          },
           status: 'Needs Review',
-          caseRef: null,
+          caseRef: selectedCase ? cases.find(c => c.id === selectedCase) : null,
           tags: [],
           lastViewed: null,
           starred: false,
           version: 1,
-          previewUrl: file.type.includes('pdf') ? 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf' : null
+          versionHistory: [
+            { version: 1, date: new Date().toISOString(), uploadedBy: { id: 123, name: user?.displayName || 'John Doe', role: 'client' } }
+          ],
+          previewUrl: file.type.includes('pdf') ? 'https://documentcloud.adobe.com/view-sdk-demo/PDFs/Bodea Brochure.pdf' : null,
+          sharedWith: [],
+          comments: [],
+          needsAction: false
         }));
         
         setDocuments(prev => [...prev, ...newDocs]);
@@ -498,6 +758,26 @@ const ClientDocumentsPage = () => {
         return [...prev, tag];
       }
     });
+  };
+  
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setSelectedTags([]);
+    setDateFilter('all');
+    setSelectedCase('');
+    setSelectedFolder('all');
+  };
+  
+  // Toggle document star status
+  const toggleDocumentStar = (docId) => {
+    setDocuments(prev => 
+      prev.map(doc => 
+        doc.id === docId 
+          ? { ...doc, starred: !doc.starred } 
+          : doc
+      )
+    );
   };
   
   if (loading) {
@@ -528,8 +808,13 @@ const ClientDocumentsPage = () => {
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">Documents</h1>
-          <div className="mt-4 md:mt-0 flex space-x-2">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Documents</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Manage and access all your legal documents in one place
+            </p>
+          </div>
+          <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2">
             <input
               type="file"
               multiple
@@ -564,12 +849,129 @@ const ClientDocumentsPage = () => {
         </div>
       </div>
       
+      {/* Document statistics */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-6">
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="p-5">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Document Overview</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center">
+                  <div className="bg-[#800000] bg-opacity-20 p-3 rounded-full">
+                    <HiOutlineDocumentText className="h-6 w-6 text-[#800000]" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-sm font-medium text-gray-500">Total Documents</h3>
+                    <p className="text-2xl font-semibold text-gray-900">{documentCounts.total}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center">
+                  <div className="bg-yellow-100 p-3 rounded-full">
+                    <HiOutlineExclamation className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-sm font-medium text-gray-500">Needs Action</h3>
+                    <p className="text-2xl font-semibold text-gray-900">{documentCounts.needsAction}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center">
+                  <div className="bg-blue-100 p-3 rounded-full">
+                    <HiOutlineShare className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-sm font-medium text-gray-500">Shared Documents</h3>
+                    <p className="text-2xl font-semibold text-gray-900">{documentCounts.shared}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* File upload warning modal */}
+      <Transition appear show={showFileSizeWarning} as={Fragment}>
+        <Dialog
+          as="div"
+          className="fixed inset-0 z-10 overflow-y-auto"
+          onClose={() => setShowFileSizeWarning(false)}
+        >
+          <div className="min-h-screen px-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+            </Transition.Child>
+            
+            {/* This element is to trick the browser into centering the modal contents. */}
+            <span className="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
+            
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="bg-yellow-100 rounded-full p-2">
+                      <HiOutlineExclamation className="h-6 w-6 text-yellow-600" />
+                    </div>
+                  </div>
+                  <Dialog.Title
+                    as="h3"
+                    className="ml-3 text-lg font-medium leading-6 text-gray-900"
+                  >
+                    File Size Limit Exceeded
+                  </Dialog.Title>
+                </div>
+                
+                <div className="mt-4">
+                  <p className="text-sm text-gray-500">
+                    One or more files exceed the maximum file size limit of 10MB. Please compress your files or upload them individually.
+                  </p>
+                </div>
+                
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#800000] border border-transparent rounded-md hover:bg-[#600000] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#800000]"
+                    onClick={() => setShowFileSizeWarning(false)}
+                  >
+                    Understood
+                  </button>
+                </div>
+              </div>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition>
+      
       {/* Upload progress */}
       {isUploading && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-4">
           <div className="bg-white shadow rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-900">Uploading {uploadFiles.length} document(s)</h3>
+              <div className="flex items-center">
+                <HiOutlineCloudUpload className="h-5 w-5 text-[#800000] mr-2" />
+                <h3 className="text-sm font-medium text-gray-900">Uploading {uploadFiles.length} document(s)</h3>
+              </div>
               <span className="text-sm text-gray-500">{uploadProgress}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -578,9 +980,13 @@ const ClientDocumentsPage = () => {
                 style={{ width: `${uploadProgress}%` }}
               ></div>
             </div>
-            <div className="mt-2 text-xs text-gray-500">
+            <div className="mt-2 text-xs text-gray-500 max-h-20 overflow-y-auto">
               {uploadFiles.map((file, index) => (
-                <div key={index} className="truncate">{file.name}</div>
+                <div key={index} className="truncate py-1 flex items-center">
+                  <span className="w-4 inline-block">{index + 1}.</span>
+                  <span className="truncate">{file.name}</span>
+                  <span className="ml-2 text-gray-400">({(file.size / 1024).toFixed(1)} KB)</span>
+                </div>
               ))}
             </div>
           </div>
@@ -601,14 +1007,34 @@ const ClientDocumentsPage = () => {
               {recentlyViewed.map(doc => (
                 <div 
                   key={doc.id} 
-                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition duration-150 ease-in-out"
+                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition duration-150 ease-in-out relative group"
                   onClick={() => handlePreview(doc)}
                 >
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleDocumentStar(doc.id);
+                      }}
+                      className={`${doc.starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+                    >
+                      <HiOutlineStar className="h-5 w-5" />
+                    </button>
+                  </div>
                   <div className="flex items-center">
                     {getDocumentIcon(doc.type)}
                     <div className="ml-3">
                       <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
-                      <p className="text-xs text-gray-500">{new Date(doc.lastViewed).toLocaleString()}</p>
+                      <div className="flex items-center mt-1">
+                        <p className="text-xs text-gray-500 mr-2">{formatRelativeDate(doc.lastViewed)}</p>
+                        {doc.needsAction && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            doc.actionType === 'review' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {doc.actionType === 'review' ? 'Review' : 'Sign'}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -618,10 +1044,38 @@ const ClientDocumentsPage = () => {
         </div>
       )}
       
+      {/* Mobile Tab Navigation */}
+      <div className="md:hidden max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-4">
+        <div className="flex border-b border-gray-200">
+          <button
+            className={`flex-1 py-3 text-center ${
+              activeMobileTab === 'documents'
+                ? 'border-b-2 border-[#800000] text-[#800000] font-medium'
+                : 'text-gray-500'
+            }`}
+            onClick={() => setActiveMobileTab('documents')}
+          >
+            Documents
+          </button>
+          <button
+            className={`flex-1 py-3 text-center ${
+              activeMobileTab === 'folders'
+                ? 'border-b-2 border-[#800000] text-[#800000] font-medium'
+                : 'text-gray-500'
+            }`}
+            onClick={() => setActiveMobileTab('folders')}
+          >
+            Folders
+          </button>
+        </div>
+      </div>
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-6">
         <div className="flex flex-col lg:flex-row">
-          {/* Folders sidebar */}
-          <div className="w-full lg:w-64 lg:flex-shrink-0 mb-6 lg:mb-0 lg:mr-8">
+          {/* Folders sidebar - hidden on mobile unless activated */}
+          <div className={`w-full lg:w-64 lg:flex-shrink-0 mb-6 lg:mb-0 lg:mr-8 ${
+            activeMobileTab === 'folders' || !('ontouchstart' in window) ? 'block' : 'hidden lg:block'
+          }`}>
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h2 className="text-lg font-medium text-gray-900">Folders</h2>
@@ -662,23 +1116,22 @@ const ClientDocumentsPage = () => {
               )}
               
               <nav className="p-4 space-y-1">
-                {folderCounts.map((folder) => (
+                {folders.map((folder) => (
                   <button
                     key={folder.id}
-                    onClick={() => setSelectedFolder(folder.id)}
+                    onClick={() => {
+                      setSelectedFolder(folder.id);
+                      setActiveMobileTab('documents');
+                    }}
                     className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                       selectedFolder === folder.id 
                         ? 'bg-[#800000] text-white'
                         : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    {folder.id === 'all' ? (
-                      <HiOutlineFolder className="mr-3 h-5 w-5 flex-shrink-0" />
-                    ) : folder.id === 'needs-review' || folder.id === 'needs-signature' ? (
-                      <HiOutlineTag className="mr-3 h-5 w-5 flex-shrink-0" />
-                    ) : (
-                      <HiOutlineFolderOpen className="mr-3 h-5 w-5 flex-shrink-0" />
-                    )}
+                    <span className="mr-3 h-5 w-5 flex-shrink-0">
+                      {folder.icon}
+                    </span>
                     
                     <span className="truncate">{folder.name}</span>
                     <span className={`ml-auto inline-block px-2 py-0.5 text-xs rounded-full ${
@@ -691,6 +1144,23 @@ const ClientDocumentsPage = () => {
                   </button>
                 ))}
               </nav>
+              
+              {/* Case filter */}
+              <div className="p-4 border-t border-gray-200">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Filter by Case</h3>
+                <select
+                  value={selectedCase}
+                  onChange={(e) => setSelectedCase(e.target.value)}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm rounded-md"
+                >
+                  <option value="">All Cases</option>
+                  {cases.map((caseItem) => (
+                    <option key={caseItem.id} value={caseItem.id}>
+                      {caseItem.name} ({caseItem.number})
+                    </option>
+                  ))}
+                </select>
+              </div>
               
               {/* Tag filters */}
               <div className="p-4 border-t border-gray-200">
@@ -742,16 +1212,31 @@ const ClientDocumentsPage = () => {
                   ))}
                 </div>
               </div>
+              
+              {/* Clear filters button */}
+              {(selectedTags.length > 0 || dateFilter !== 'all' || selectedCase || selectedFolder !== 'all') && (
+                <div className="p-4 border-t border-gray-200">
+                  <button
+                    onClick={clearAllFilters}
+                    className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                  >
+                    <HiOutlineX className="mr-2 h-5 w-5 text-gray-400" />
+                    Clear All Filters
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           
-          {/* Documents content */}
-          <div className="flex-1">
+          {/* Documents content - hidden on mobile when folders tab is active */}
+          <div className={`flex-1 ${
+            activeMobileTab === 'documents' || !('ontouchstart' in window) ? 'block' : 'hidden lg:block'
+          }`}>
             <div className="bg-white shadow rounded-lg">
               {/* Search and filter */}
               <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
                 <div className="flex flex-col sm:flex-row justify-between">
-                  <div className="w-full sm:w-64 sm:mr-4">
+                  <div className="w-full sm:w-64 sm:mr-4 relative">
                     <div className="relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <HiOutlineSearch className="h-5 w-5 text-gray-400" />
@@ -761,9 +1246,39 @@ const ClientDocumentsPage = () => {
                         className="focus:ring-[#800000] focus:border-[#800000] block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
                         placeholder="Search documents"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={handleSearchChange}
+                        ref={searchInputRef}
                       />
                     </div>
+                    
+                    {/* Search suggestions */}
+                    {showSearchSuggestions && searchSuggestions.length > 0 && (
+                      <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-1 text-sm">
+                        {searchSuggestions
+                          .filter(suggestion => 
+                            suggestion.value.toLowerCase().includes(searchTerm.toLowerCase())
+                          )
+                          .map((suggestion, index) => (
+                            <button
+                              key={index}
+                              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center"
+                              onClick={() => handleSearchSuggestionClick(suggestion)}
+                            >
+                              {suggestion.type === 'tag' && (
+                                <HiOutlineTag className="mr-3 h-5 w-5 text-gray-400" />
+                              )}
+                              {suggestion.type === 'document' && (
+                                <HiOutlineDocumentText className="mr-3 h-5 w-5 text-gray-400" />
+                              )}
+                              {suggestion.type === 'case' && (
+                                <HiOutlineFolder className="mr-3 h-5 w-5 text-gray-400" />
+                              )}
+                              
+                              <span className="truncate">{suggestion.value}</span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="mt-3 sm:mt-0 flex items-center space-x-2">
@@ -935,7 +1450,7 @@ const ClientDocumentsPage = () => {
               {/* Document list */}
               {filteredDocuments.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200 table-fixed">
                     <thead className="bg-gray-50">
                       <tr>
                         {isSelectMode && (
@@ -950,7 +1465,7 @@ const ClientDocumentsPage = () => {
                         )}
                         <th
                           scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/2"
                           onClick={() => handleSort('name')}
                         >
                           <div className="flex items-center">
@@ -964,7 +1479,7 @@ const ClientDocumentsPage = () => {
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6"
                           onClick={() => handleSort('uploadDate')}
                         >
                           <div className="flex items-center">
@@ -978,7 +1493,7 @@ const ClientDocumentsPage = () => {
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6"
                           onClick={() => handleSort('status')}
                         >
                           <div className="flex items-center">
@@ -990,7 +1505,7 @@ const ClientDocumentsPage = () => {
                             )}
                           </div>
                         </th>
-                        <th scope="col" className="relative px-6 py-3">
+                        <th scope="col" className="relative px-6 py-3 w-24">
                           <span className="sr-only">Actions</span>
                         </th>
                       </tr>
@@ -1013,29 +1528,29 @@ const ClientDocumentsPage = () => {
                               <div className="flex-shrink-0 cursor-pointer" onClick={() => handlePreview(document)}>
                                 {getDocumentIcon(document.type)}
                               </div>
-                              <div className="ml-4">
+                              <div className="ml-4 max-w-sm">
                                 <div className="text-sm font-medium text-gray-900 flex items-center">
-                                  <span className="cursor-pointer hover:underline" onClick={() => handlePreview(document)}>
+                                  <span className="cursor-pointer hover:underline truncate max-w-xs inline-block" onClick={() => handlePreview(document)}>
                                     {document.name}
                                   </span>
                                   {document.starred && (
-                                    <HiOutlineStar className="ml-1 h-4 w-4 text-yellow-500" />
+                                    <HiOutlineStar className="ml-1 h-4 w-4 flex-shrink-0 text-yellow-500" />
                                   )}
                                   {document.version > 1 && (
-                                    <span className="ml-2 px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-600">
+                                    <span className="ml-2 px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-600 flex-shrink-0">
                                       v{document.version}
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-gray-500 truncate max-w-xs">
                                   {document.description}
                                 </div>
-                                <div className="text-xs text-gray-500 mt-1">
+                                <div className="text-xs text-gray-500 mt-1 truncate max-w-xs">
                                   {document.size} • Uploaded by {document.uploadedBy.name}
                                 </div>
                                 {document.tags.length > 0 && (
                                   <div className="mt-1 flex flex-wrap">
-                                    {document.tags.map((tag, index) => (
+                                    {document.tags.slice(0, 3).map((tag, index) => (
                                       <button
                                         key={index}
                                         onClick={() => toggleTagFilter(tag)}
@@ -1048,6 +1563,11 @@ const ClientDocumentsPage = () => {
                                         {tag}
                                       </button>
                                     ))}
+                                    {document.tags.length > 3 && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 mr-1 mb-1">
+                                        +{document.tags.length - 3}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns';
 import { 
   HiOutlineDocumentText, 
   HiOutlineCalendar, 
@@ -12,7 +13,12 @@ import {
   HiOutlineClipboardCheck,
   HiChevronRight,
   HiChevronDown,
-  HiOutlineExclamationCircle
+  HiOutlineExclamationCircle,
+  HiOutlineBell,
+  HiOutlineCheck,
+  HiOutlineRefresh,
+  HiOutlineCog,
+  HiOutlineColorSwatch
 } from 'react-icons/hi';
 
 const AttorneyDashboardPage = () => {
@@ -39,8 +45,9 @@ const AttorneyDashboardPage = () => {
   const [upcomingDeadlines, setUpcomingDeadlines] = useState([]);
   const [clientMessages, setClientMessages] = useState([]);
   const [openCaseId, setOpenCaseId] = useState(null);
+  const [viewMode, setViewMode] = useState('all'); // 'all', 'urgent', 'recent'
   
-  // Mock data for cases
+  // Mock data for cases - using more recent dates
   const cases = [
     {
       id: 1,
@@ -54,10 +61,10 @@ const AttorneyDashboardPage = () => {
       },
       status: 'Active',
       priority: 'High',
-      lastActivity: '2023-05-20',
+      lastActivity: '2025-06-01', // Current year
       deadlines: [
-        { id: 1, title: 'Submit Settlement Proposal', date: '2023-06-01' },
-        { id: 2, title: 'Expert Witness Deposition', date: '2023-06-15' }
+        { id: 1, title: 'Submit Settlement Proposal', date: '2025-06-10' },
+        { id: 2, title: 'Expert Witness Deposition', date: '2025-06-25' }
       ]
     },
     {
@@ -72,9 +79,9 @@ const AttorneyDashboardPage = () => {
       },
       status: 'Active',
       priority: 'Medium',
-      lastActivity: '2023-05-18',
+      lastActivity: '2025-06-02', // Current year
       deadlines: [
-        { id: 3, title: 'File Probate Documents', date: '2023-06-20' }
+        { id: 3, title: 'File Probate Documents', date: '2025-06-20' }
       ]
     },
     {
@@ -89,10 +96,10 @@ const AttorneyDashboardPage = () => {
       },
       status: 'Active',
       priority: 'High',
-      lastActivity: '2023-05-19',
+      lastActivity: '2025-06-01', // Current year
       deadlines: [
-        { id: 4, title: 'Mediation Session', date: '2023-05-30' },
-        { id: 5, title: 'Court Hearing', date: '2023-06-25' }
+        { id: 4, title: 'Mediation Session', date: '2025-06-07' },
+        { id: 5, title: 'Court Hearing', date: '2025-06-25' }
       ]
     },
     {
@@ -107,14 +114,14 @@ const AttorneyDashboardPage = () => {
       },
       status: 'Pending',
       priority: 'Low',
-      lastActivity: '2023-05-15',
+      lastActivity: '2025-06-01', // Current year
       deadlines: [
-        { id: 6, title: 'Contract Review Completion', date: '2023-06-05' }
+        { id: 6, title: 'Contract Review Completion', date: '2025-06-05' }
       ]
     }
   ];
   
-  // Mock recent activity data
+  // Mock recent activity data - with current year timestamps
   const mockActivities = [
     { 
       id: 1, 
@@ -122,7 +129,7 @@ const AttorneyDashboardPage = () => {
       description: 'You added a comment on Smith v. Johnson case',
       caseId: 1,
       caseName: 'Smith v. Johnson',
-      timestamp: '2023-05-20T14:30:00Z' 
+      timestamp: '2025-06-03T14:30:00Z' // Today
     },
     { 
       id: 2, 
@@ -130,7 +137,7 @@ const AttorneyDashboardPage = () => {
       description: 'You uploaded "Settlement Analysis" document to Jones Divorce case',
       caseId: 3,
       caseName: 'Jones Divorce',
-      timestamp: '2023-05-19T11:15:00Z' 
+      timestamp: '2025-06-03T11:15:00Z' // Today
     },
     { 
       id: 3, 
@@ -138,7 +145,7 @@ const AttorneyDashboardPage = () => {
       description: 'Meeting with Robert Williams Jr. scheduled for Estate of Williams case',
       caseId: 2,
       caseName: 'Estate of Williams',
-      timestamp: '2023-05-18T16:45:00Z' 
+      timestamp: '2025-06-02T16:45:00Z' // Yesterday
     },
     { 
       id: 4, 
@@ -146,7 +153,7 @@ const AttorneyDashboardPage = () => {
       description: 'You recorded 3.5 billable hours for Brown LLC Contract case',
       caseId: 4,
       caseName: 'Brown LLC Contract',
-      timestamp: '2023-05-18T10:20:00Z' 
+      timestamp: '2025-06-02T10:20:00Z' // Yesterday
     },
     { 
       id: 5, 
@@ -154,11 +161,11 @@ const AttorneyDashboardPage = () => {
       description: 'You reviewed "Medical Records" document for Smith v. Johnson case',
       caseId: 1,
       caseName: 'Smith v. Johnson',
-      timestamp: '2023-05-17T09:45:00Z' 
+      timestamp: '2025-06-01T09:45:00Z' // 2 days ago
     }
   ];
   
-  // Mock client messages data
+  // Mock client messages data - with current year timestamps
   const mockMessages = [
     {
       id: 1,
@@ -170,7 +177,7 @@ const AttorneyDashboardPage = () => {
       caseId: 1,
       caseName: 'Smith v. Johnson',
       message: 'Do you have any updates on the settlement offer? I\'m eager to hear back from the insurance company.',
-      timestamp: '2023-05-20T09:15:00Z',
+      timestamp: '2025-06-03T09:15:00Z', // Today
       read: false
     },
     {
@@ -183,7 +190,7 @@ const AttorneyDashboardPage = () => {
       caseId: 3,
       caseName: 'Jones Divorce',
       message: 'I reviewed the mediation agreement but have some concerns about the child custody arrangements we discussed.',
-      timestamp: '2023-05-19T16:30:00Z',
+      timestamp: '2025-06-02T16:30:00Z', // Yesterday
       read: false
     },
     {
@@ -196,7 +203,7 @@ const AttorneyDashboardPage = () => {
       caseId: 2,
       caseName: 'Estate of Williams',
       message: 'I found some additional financial documents that might be relevant for the estate planning. When can I drop them off?',
-      timestamp: '2023-05-18T11:45:00Z',
+      timestamp: '2025-06-01T11:45:00Z', // 2 days ago
       read: true
     }
   ];
@@ -222,7 +229,7 @@ const AttorneyDashboardPage = () => {
             timeframe: 'this month'
           },
           revenueGenerated: {
-            value: 22750,
+            value: 342500, // R22750 in Rands (approximately)
             change: 5.2,
             timeframe: 'this month'
           }
@@ -267,34 +274,33 @@ const AttorneyDashboardPage = () => {
     }
   };
   
-  // Format date helper
+  // Format date helper with improved display
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
+    const date = new Date(dateString);
+    
+    if (isToday(date)) {
+      return 'Today';
+    } else if (isYesterday(date)) {
+      return 'Yesterday';
+    } else {
+      return format(date, 'd MMM yyyy');
+    }
   };
   
   // Format time helper for timestamps
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return format(date, 'h:mm a');
   };
   
   // Format for relative time (e.g., "2 days ago")
   const getRelativeTime = (timestamp) => {
-    const now = new Date();
-    const date = new Date(timestamp);
-    const diffInMs = now - date;
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    
-    if (diffInDays > 0) {
-      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-    } else if (diffInHours > 0) {
-      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    } else if (diffInMinutes > 0) {
-      return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Just now';
+    try {
+      const date = typeof timestamp === 'string' ? parseISO(timestamp) : new Date(timestamp);
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (error) {
+      console.error('Invalid date format:', timestamp);
+      return 'recently';
     }
   };
   
@@ -342,13 +348,23 @@ const AttorneyDashboardPage = () => {
     return diffInDays >= 0 && diffInDays <= 7;
   };
   
-  // Format currency
+  // Format currency in Rands
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-ZA', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'ZAR',
       minimumFractionDigits: 0
     }).format(amount);
+  };
+
+  // Filter items based on view mode
+  const getFilteredCases = () => {
+    if (viewMode === 'urgent') {
+      return cases.filter(c => c.priority === 'High');
+    } else if (viewMode === 'recent') {
+      return [...cases].sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
+    }
+    return cases;
   };
   
   if (loading) {
@@ -393,106 +409,145 @@ const AttorneyDashboardPage = () => {
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Attorney Dashboard</h1>
-          <span className="text-sm text-gray-500">
-            Welcome back, {user?.firstName || 'Attorney'} | {new Date().toLocaleDateString()}
-          </span>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-gray-200 pb-5">
+          <div className="flex items-center mb-4 sm:mb-0">
+            <div className="h-12 w-12 bg-[#800000] text-white rounded-lg flex items-center justify-center mr-4">
+              <HiOutlineBriefcase className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Attorney Dashboard</h1>
+              <p className="text-sm text-gray-500">
+                Welcome back, {user?.firstName || 'Attorney'} | {format(new Date(), 'EEEE, d MMMM yyyy')}
+              </p>
+            </div>
+          </div>
+          <div className="flex space-x-3">
+            <button 
+              className={`px-3 py-2 text-sm rounded-md ${viewMode === 'all' ? 'bg-[#800000] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+              onClick={() => setViewMode('all')}
+            >
+              All Cases
+            </button>
+            <button 
+              className={`px-3 py-2 text-sm rounded-md ${viewMode === 'urgent' ? 'bg-[#800000] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+              onClick={() => setViewMode('urgent')}
+            >
+              Urgent
+            </button>
+            <button 
+              className={`px-3 py-2 text-sm rounded-md ${viewMode === 'recent' ? 'bg-[#800000] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+              onClick={() => setViewMode('recent')}
+            >
+              Recent
+            </button>
+          </div>
         </div>
       </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <div className="py-4">
+        <div className="py-5">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+            <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
               <div className="p-5">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineBriefcase className="h-6 w-6 text-gray-400" />
+                  <div className="flex-shrink-0 bg-blue-50 p-3 rounded-md">
+                    <HiOutlineBriefcase className="h-6 w-6 text-blue-600" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Active Cases</dt>
                       <dd>
-                        <div className="text-lg font-medium text-gray-900">{stats.activeCases}</div>
+                        <div className="text-lg font-semibold text-gray-900">{stats.activeCases}</div>
                       </dd>
                     </dl>
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-5 py-3">
+              <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/cases" className="font-medium text-[#800000] hover:text-[#600000]">View all cases</Link>
+                  <Link to="/cases" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    View all cases
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
               <div className="p-5">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineUserGroup className="h-6 w-6 text-gray-400" />
+                  <div className="flex-shrink-0 bg-green-50 p-3 rounded-md">
+                    <HiOutlineUserGroup className="h-6 w-6 text-green-600" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Clients Represented</dt>
                       <dd>
-                        <div className="text-lg font-medium text-gray-900">{stats.clientsRepresented}</div>
+                        <div className="text-lg font-semibold text-gray-900">{stats.clientsRepresented}</div>
                       </dd>
                     </dl>
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-5 py-3">
+              <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/clients" className="font-medium text-[#800000] hover:text-[#600000]">View all clients</Link>
+                  <Link to="/clients" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    View all clients
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
               <div className="p-5">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineDocumentText className="h-6 w-6 text-gray-400" />
+                  <div className="flex-shrink-0 bg-purple-50 p-3 rounded-md">
+                    <HiOutlineDocumentText className="h-6 w-6 text-purple-600" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Documents Needing Review</dt>
                       <dd>
-                        <div className="text-lg font-medium text-gray-900">{stats.documentsRequiringReview}</div>
+                        <div className="text-lg font-semibold text-gray-900">{stats.documentsRequiringReview}</div>
                       </dd>
                     </dl>
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-5 py-3">
+              <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/documents/pending" className="font-medium text-[#800000] hover:text-[#600000]">Review documents</Link>
+                  <Link to="/documents/pending" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    Review documents
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
               <div className="p-5">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineCalendar className="h-6 w-6 text-gray-400" />
+                  <div className="flex-shrink-0 bg-amber-50 p-3 rounded-md">
+                    <HiOutlineCalendar className="h-6 w-6 text-amber-600" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Upcoming Events</dt>
                       <dd>
-                        <div className="text-lg font-medium text-gray-900">{stats.upcomingEvents}</div>
+                        <div className="text-lg font-semibold text-gray-900">{stats.upcomingEvents}</div>
                       </dd>
                     </dl>
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-5 py-3">
+              <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/calendar" className="font-medium text-[#800000] hover:text-[#600000]">View calendar</Link>
+                  <Link to="/calendar" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    View calendar
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
@@ -500,18 +555,18 @@ const AttorneyDashboardPage = () => {
           
           {/* Billable Hours and Revenue */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 mb-6">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
               <div className="p-5">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineClock className="h-6 w-6 text-gray-400" />
+                  <div className="flex-shrink-0 bg-indigo-50 p-3 rounded-md">
+                    <HiOutlineClock className="h-6 w-6 text-indigo-600" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Billable Hours ({stats.billableHours.timeframe})</dt>
-                      <dd className="flex items-baseline">
+                      <dd className="flex items-baseline mt-2">
                         <div className="text-2xl font-semibold text-gray-900">
-                          {stats.billableHours.value}
+                          {stats.billableHours.value}h
                         </div>
                         <div className={`ml-2 flex items-baseline text-sm font-semibold ${stats.billableHours.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {stats.billableHours.change >= 0 ? '↑' : '↓'}
@@ -522,23 +577,26 @@ const AttorneyDashboardPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-5 py-3">
+              <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/time-tracking" className="font-medium text-[#800000] hover:text-[#600000]">Track time</Link>
+                  <Link to="/time-tracking" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    Track time
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
               <div className="p-5">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <HiOutlineChartBar className="h-6 w-6 text-gray-400" />
+                  <div className="flex-shrink-0 bg-emerald-50 p-3 rounded-md">
+                    <HiOutlineChartBar className="h-6 w-6 text-emerald-600" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Revenue Generated ({stats.revenueGenerated.timeframe})</dt>
-                      <dd className="flex items-baseline">
+                      <dd className="flex items-baseline mt-2">
                         <div className="text-2xl font-semibold text-gray-900">
                           {formatCurrency(stats.revenueGenerated.value)}
                         </div>
@@ -551,9 +609,12 @@ const AttorneyDashboardPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-5 py-3">
+              <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/billing" className="font-medium text-[#800000] hover:text-[#600000]">View billing</Link>
+                  <Link to="/billing" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    View billing
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
@@ -562,18 +623,25 @@ const AttorneyDashboardPage = () => {
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Cases Section */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">My Cases</h3>
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+                  <HiOutlineBriefcase className="mr-2 h-5 w-5 text-gray-500" />
+                  My Cases
+                </h3>
+                <button className="text-sm text-[#800000] hover:text-[#600000] flex items-center">
+                  <HiOutlineRefresh className="mr-1 h-4 w-4" />
+                  Refresh
+                </button>
               </div>
               <ul className="divide-y divide-gray-200">
-                {cases.length === 0 ? (
+                {getFilteredCases().length === 0 ? (
                   <li className="px-6 py-4 text-center text-gray-500">
                     No active cases found
                   </li>
                 ) : (
-                  cases.map((caseItem) => (
-                    <li key={caseItem.id} className="px-6 py-4">
+                  getFilteredCases().map((caseItem) => (
+                    <li key={caseItem.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                       <div className="cursor-pointer" onClick={() => toggleCase(caseItem.id)}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
@@ -583,7 +651,7 @@ const AttorneyDashboardPage = () => {
                             </span>
                           </div>
                           <div className="flex items-center">
-                            <span className={`mr-2 text-xs ${getPriorityColor(caseItem.priority)}`}>
+                            <span className={`mr-2 text-xs font-medium ${getPriorityColor(caseItem.priority)}`}>
                               {caseItem.priority}
                             </span>
                             {openCaseId === caseItem.id ? (
@@ -601,32 +669,36 @@ const AttorneyDashboardPage = () => {
                       
                       {/* Expanded Case Details */}
                       {openCaseId === caseItem.id && (
-                        <div className="mt-3 bg-gray-50 p-3 rounded-md">
-                          <div className="mb-2">
+                        <div className="mt-3 bg-gray-50 p-4 rounded-md border border-gray-200">
+                          <div className="mb-3">
                             <div className="flex items-center text-sm">
                               <img 
                                 src={caseItem.client.avatarUrl} 
                                 alt={caseItem.client.name}
-                                className="h-8 w-8 rounded-full mr-2"
+                                className="h-10 w-10 rounded-full mr-3 border-2 border-white shadow-sm"
                               />
                               <div>
-                                <span className="font-medium">{caseItem.client.name}</span>
-                                <span className="text-gray-500 text-xs ml-2">{caseItem.client.email}</span>
+                                <span className="font-medium text-gray-900">{caseItem.client.name}</span>
+                                <div className="text-gray-500 text-xs flex items-center mt-1">
+                                  <HiOutlineMail className="mr-1 h-3 w-3" />
+                                  {caseItem.client.email}
+                                </div>
                               </div>
                             </div>
                           </div>
                           
                           {caseItem.deadlines.length > 0 && (
-                            <div className="mt-2">
-                              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                            <div className="mt-3">
+                              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center">
+                                <HiOutlineCalendar className="mr-1 h-4 w-4" />
                                 Upcoming Deadlines
                               </h4>
-                              <ul className="space-y-1">
+                              <ul className="space-y-2 bg-white p-3 rounded-md border border-gray-100">
                                 {caseItem.deadlines.map((deadline) => (
                                   <li key={deadline.id} className="text-sm">
                                     <div className="flex items-center">
-                                      <HiOutlineCalendar className="mr-1 h-4 w-4 text-gray-400" />
-                                      <span className="mr-2">{deadline.title}:</span>
+                                      <div className={`w-2 h-2 rounded-full mr-2 ${isUpcomingDeadline(deadline.date) ? 'bg-red-500' : 'bg-gray-300'}`}></div>
+                                      <span className="mr-2 font-medium">{deadline.title}:</span>
                                       <span className={`${isUpcomingDeadline(deadline.date) ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
                                         {formatDate(deadline.date)}
                                       </span>
@@ -637,13 +709,22 @@ const AttorneyDashboardPage = () => {
                             </div>
                           )}
                           
-                          <div className="mt-3 text-right">
+                          <div className="mt-4 flex justify-between">
+                            <div className="flex space-x-2">
+                              <button className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]">
+                                <HiOutlineChatAlt2 className="mr-1 h-3 w-3" />
+                                Message
+                              </button>
+                              <button className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]">
+                                <HiOutlineCalendar className="mr-1 h-3 w-3" />
+                                Schedule
+                              </button>
+                            </div>
                             <Link
                               to={`/cases/${caseItem.id}`}
-                              className="inline-flex items-center text-xs font-medium text-[#800000] hover:text-[#600000]"
+                              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                             >
-                              View Case Details
-                              <HiChevronRight className="ml-1 h-4 w-4" />
+                              View Details
                             </Link>
                           </div>
                         </div>
@@ -654,15 +735,25 @@ const AttorneyDashboardPage = () => {
               </ul>
               <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/cases" className="font-medium text-[#800000] hover:text-[#600000]">View all cases</Link>
+                  <Link to="/cases" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    View all cases
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
             
             {/* Recent Activity */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Activity</h3>
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+                  <HiOutlineClock className="mr-2 h-5 w-5 text-gray-500" />
+                  Recent Activity
+                </h3>
+                <button className="text-sm text-[#800000] hover:text-[#600000] flex items-center">
+                  <HiOutlineRefresh className="mr-1 h-4 w-4" />
+                  Refresh
+                </button>
               </div>
               <ul className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
                 {recentActivity.length === 0 ? (
@@ -671,7 +762,7 @@ const AttorneyDashboardPage = () => {
                   </li>
                 ) : (
                   recentActivity.map((activity) => (
-                    <li key={activity.id} className="px-6 py-4">
+                    <li key={activity.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                       <div className="flex space-x-3">
                         <div className="flex-shrink-0">
                           {getActivityIcon(activity.type)}
@@ -688,7 +779,7 @@ const AttorneyDashboardPage = () => {
                               {activity.caseName}
                             </Link>
                             <span className="mx-1">•</span>
-                            <span>{getRelativeTime(activity.timestamp)}</span>
+                            <span className="font-medium">{getRelativeTime(activity.timestamp)}</span>
                             <span className="mx-1">•</span>
                             <span>{formatTime(activity.timestamp)}</span>
                           </div>
@@ -700,15 +791,24 @@ const AttorneyDashboardPage = () => {
               </ul>
               <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/activity" className="font-medium text-[#800000] hover:text-[#600000]">View all activity</Link>
+                  <Link to="/activity" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    View all activity
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
             
             {/* Upcoming Deadlines */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Upcoming Deadlines</h3>
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+                  <HiOutlineCalendar className="mr-2 h-5 w-5 text-gray-500" />
+                  Upcoming Deadlines
+                </h3>
+                <Link to="/calendar" className="text-sm text-[#800000] hover:text-[#600000]">
+                  View calendar
+                </Link>
               </div>
               <ul className="divide-y divide-gray-200">
                 {upcomingDeadlines.length === 0 ? (
@@ -717,13 +817,13 @@ const AttorneyDashboardPage = () => {
                   </li>
                 ) : (
                   upcomingDeadlines.slice(0, 5).map((deadline) => (
-                    <li key={deadline.id} className="px-6 py-4">
+                    <li key={deadline.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                       <div className="flex justify-between">
                         <div className="flex items-start">
-                          <div className="flex-shrink-0 mt-0.5">
-                            <HiOutlineCalendar className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <div className="ml-3">
+                          <div className={`flex-shrink-0 mt-0.5 w-2 h-2 rounded-full mr-3 ${
+                            isUpcomingDeadline(deadline.date) ? 'bg-red-500' : 'bg-gray-300'
+                          }`}></div>
+                          <div>
                             <p className="text-sm font-medium text-gray-900">{deadline.title}</p>
                             <div className="mt-1 flex items-center text-xs text-gray-500">
                               <Link 
@@ -738,7 +838,11 @@ const AttorneyDashboardPage = () => {
                           </div>
                         </div>
                         <div className="ml-3 flex-shrink-0">
-                          <div className={`text-sm ${isUpcomingDeadline(deadline.date) ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                          <div className={`text-sm px-2.5 py-0.5 rounded-full ${
+                            isUpcomingDeadline(deadline.date) 
+                              ? 'bg-red-100 text-red-800 font-medium' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
                             {formatDate(deadline.date)}
                           </div>
                         </div>
@@ -749,15 +853,24 @@ const AttorneyDashboardPage = () => {
               </ul>
               <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/calendar" className="font-medium text-[#800000] hover:text-[#600000]">View all deadlines</Link>
+                  <Link to="/calendar" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    View all deadlines
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
             
             {/* Client Messages */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Client Messages</h3>
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+                  <HiOutlineChatAlt2 className="mr-2 h-5 w-5 text-gray-500" />
+                  Client Messages
+                </h3>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  {clientMessages.filter(m => !m.read).length} unread
+                </span>
               </div>
               <ul className="divide-y divide-gray-200">
                 {clientMessages.length === 0 ? (
@@ -766,19 +879,22 @@ const AttorneyDashboardPage = () => {
                   </li>
                 ) : (
                   clientMessages.map((message) => (
-                    <li key={message.id} className={`px-6 py-4 ${!message.read ? 'bg-blue-50' : ''}`}>
+                    <li key={message.id} className={`px-6 py-4 hover:bg-gray-50 transition-colors ${!message.read ? 'bg-blue-50' : ''}`}>
                       <div className="flex space-x-3">
                         <div className="flex-shrink-0">
                           <img 
-                            className="h-10 w-10 rounded-full" 
+                            className="h-10 w-10 rounded-full border-2 border-white shadow-sm" 
                             src={message.client.avatarUrl} 
                             alt={message.client.name} 
                           />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex justify-between">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 flex items-center">
                               {message.client.name}
+                              {!message.read && (
+                                <span className="ml-2 w-2 h-2 bg-blue-600 rounded-full"></span>
+                              )}
                             </p>
                             <p className="text-xs text-gray-500">
                               {getRelativeTime(message.timestamp)}
@@ -800,9 +916,10 @@ const AttorneyDashboardPage = () => {
                             </div>
                             <Link 
                               to={`/messages/${message.id}`}
-                              className="text-xs font-medium text-[#800000] hover:text-[#600000]"
+                              className="text-xs font-medium text-[#800000] hover:text-[#600000] flex items-center"
                             >
                               Reply
+                              <HiChevronRight className="ml-1 h-3 w-3" />
                             </Link>
                           </div>
                         </div>
@@ -813,7 +930,10 @@ const AttorneyDashboardPage = () => {
               </ul>
               <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/messages" className="font-medium text-[#800000] hover:text-[#600000]">View all messages</Link>
+                  <Link to="/messages" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                    View all messages
+                    <HiChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>

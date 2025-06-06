@@ -66,7 +66,7 @@ const ClientSidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
               alt="PSN Attorneys"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "https://via.placeholder.com/32x32?text=PSN";
+                e.target.src = "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?semt=ais_hybrid&w=740";
               }}
             />
             {!isCollapsed && (

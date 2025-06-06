@@ -28,10 +28,14 @@ import SupportPage from './pages/private/client/ClientSupportPage';
 
 // Private pages - Attorney
 import AttorneyDashboardPage from './pages/private/attorney/AttorneyDashboardPage';
+import AttorneyCalendarPage from './pages/private/attorney/AttorneyCalendarPage';
 import AttorneyCasesPage from './pages/private/attorney/AttorneyCasesPage';
 import AttorneyClientsPage from './pages/private/attorney/AttorneyClientsPage';
 import AttorneyTimeTrackingPage from './pages/private/attorney/AttorneyTimeTrackingPage';
 import AttorneyBillingPage from './pages/private/attorney/AttorneyBillingPage';
+import AttorneyDocumentsPage from './pages/private/attorney/AttorneyDocumentsPage';
+import AttorneyMessagesPage from './pages/private/attorney/AttorneyMessagesPage';
+import AttorneyProfilePage from './pages/private/attorney/AttorneyProfilePage'; // New import
 
 // Private pages - Admin
 import AdminDashboardPage from './pages/private/admin/AdminDashboardPage';
@@ -39,6 +43,18 @@ import UsersManagementPage from './pages/private/admin/UsersManagementPage';
 import SystemSettingsPage from './pages/private/admin/SystemSettingsPage';
 import ReportsPage from './pages/private/admin/ReportsPage';
 import AuditLogsPage from './pages/private/admin/AuditLogsPage';
+
+// Admin page imports
+import AdminFirmManagementPage from './pages/private/admin/AdminFirmManagementPage';
+import AdminAttorneysPage from './pages/private/admin/AdminAttorneysPage';
+import AdminClientsPage from './pages/private/admin/AdminClientsPage';
+import AdminCasesPage from './pages/private/admin/AdminCasesPage';
+import AdminBillingPage from './pages/private/admin/AdminBillingPage';
+import AdminDocumentsPage from './pages/private/admin/AdminDocumentsPage';
+import AdminTimeActivitiesPage from './pages/private/admin/AdminTimeActivitiesPage';
+import AdminCalendarPage from './pages/private/admin/AdminCalendarPage';
+import AdminSecurityPage from './pages/private/admin/AdminSecurityPage';
+import AdminProfilePage from './pages/private/admin/AdminProfilePage'; // New import
 
 // Layout components
 import PublicLayout from './components/layouts/PublicLayout'; // Corrected import
@@ -160,6 +176,28 @@ const ClientPortalRoutes = () => {
             <AttorneyBillingPage />
           </ProtectedRoute>
         } />
+        <Route path="attorney/documents" element={
+          <ProtectedRoute>
+            <AttorneyDocumentsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="attorney/messages" element={
+          <ProtectedRoute>
+            <AttorneyMessagesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="attorney/profile" element={
+          <ProtectedRoute>
+            <AttorneyProfilePage />
+          </ProtectedRoute>
+        } />
+        
+
+        <Route path="attorney/calendar" element={
+          <ProtectedRoute>
+            <AttorneyCalendarPage />
+          </ProtectedRoute>
+        } />
 
         {/* Admin Routes */}
         <Route path="admin/dashboard" element={
@@ -167,14 +205,39 @@ const ClientPortalRoutes = () => {
             <AdminDashboardPage />
           </ProtectedRoute>
         } />
-        <Route path="admin/users" element={
+        <Route path="admin/firm" element={
           <ProtectedRoute>
-            <UsersManagementPage />
+            <AdminFirmManagementPage />
           </ProtectedRoute>
         } />
-        <Route path="admin/settings" element={
+        <Route path="admin/attorneys" element={
           <ProtectedRoute>
-            <SystemSettingsPage />
+            <AdminAttorneysPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/clients" element={
+          <ProtectedRoute>
+            <AdminClientsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/cases" element={
+          <ProtectedRoute>
+            <AdminCasesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/billing" element={
+          <ProtectedRoute>
+            <AdminBillingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/documents" element={
+          <ProtectedRoute>
+            <AdminDocumentsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/time" element={
+          <ProtectedRoute>
+            <AdminTimeActivitiesPage />
           </ProtectedRoute>
         } />
         <Route path="admin/reports" element={
@@ -182,12 +245,38 @@ const ClientPortalRoutes = () => {
             <ReportsPage />
           </ProtectedRoute>
         } />
+        <Route path="admin/calendar" element={
+          <ProtectedRoute>
+            <AdminCalendarPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/security" element={
+          <ProtectedRoute>
+            <AdminSecurityPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/settings" element={
+          <ProtectedRoute>
+            <SystemSettingsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/users" element={
+          <ProtectedRoute>
+            <UsersManagementPage />
+          </ProtectedRoute>
+        } />
         <Route path="admin/audit-logs" element={
           <ProtectedRoute>
             <AuditLogsPage />
           </ProtectedRoute>
         } />
+        <Route path="admin/profile" element={
+          <ProtectedRoute>
+            <AdminProfilePage />
+          </ProtectedRoute>
+        } />
       </Route>
+      
 
       {/* Default redirect to dashboard if authenticated, login if not */}
       <Route path="" element={<Navigate to="home" />} />

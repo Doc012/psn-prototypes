@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 // Import role-specific layouts
@@ -17,8 +17,11 @@ import ClientSupportPage from '../pages/private/client/ClientSupportPage';
 import InvoicesPage from '../pages/private/client/InvoicesPage';
 // ... other client pages
 
-// Import attorney pages (to be implemented)
-// import AttorneyDashboardPage from '../pages/private/attorney/AttorneyDashboardPage';
+// Import attorney pages 
+import AttorneyDashboardPage from '../pages/private/attorney/AttorneyDashboardPage';
+import AttorneyDocumentsPage from '../pages/private/attorney/AttorneyDocumentsPage';
+import AttorneyMessagesPage from '../pages/private/attorney/AttorneyMessagesPage';
+import AttorneyCalendarPage from '../pages/private/attorney/AttorneyCalendarPage';
 // ... other attorney pages
 
 // Import admin pages (to be implemented)
@@ -44,8 +47,27 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   return children;
 };
 
+// Layout wrapper for attorney routes
+const AttorneyLayout = () => {
+  return (
+    <div className="attorney-layout">
+      {/* Here you would include your actual attorney layout components */}
+      <div className="min-h-screen bg-gray-100">
+        {/* Navigation would go here */}
+        <main className="py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
 const PrivateRoutes = () => {
   const { userRole } = useAuth();
+
+  console.log("Current user role in PrivateRoutes:", userRole); // Debugging
 
   return (
     <Routes>
@@ -70,19 +92,32 @@ const PrivateRoutes = () => {
         </Route>
       )}
 
-      {/* Attorney Routes (to be implemented) */}
+      {/* Attorney Routes - Updated to use correct path structure */}
       {userRole === 'attorney' && (
-        <Route 
-          path="/"
-          element={
-            <ProtectedRoute allowedRoles={['attorney']}>
-              {/* <AttorneyLayout /> - Replace with your actual component when implemented */}
-              <div>Attorney Layout - To be implemented</div>
-            </ProtectedRoute>
-          }
-        >
-          {/* Attorney routes will go here */}
-        </Route>
+        <>
+          {/* Route for root path - redirect to attorney dashboard */}
+          <Route 
+            path="/"
+            element={<Navigate to="/client-portal/attorney/dashboard" replace />}
+          />
+          
+          {/* Routes for attorney paths - use the shared PrivateLayout from layouts */}
+          <Route 
+            path="/attorney/*"
+            element={
+              <ProtectedRoute allowedRoles={['attorney']}>
+                <AttorneyLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AttorneyDashboardPage />} />
+            <Route path="dashboard" element={<AttorneyDashboardPage />} />
+            <Route path="documents" element={<AttorneyDocumentsPage />} />
+            <Route path="messages" element={<AttorneyMessagesPage />} />
+            <Route path="calendar" element={<AttorneyCalendarPage />} />
+            {/* Add other attorney routes as needed */}
+          </Route>
+        </>
       )}
 
       {/* Admin Routes (to be implemented) */}
