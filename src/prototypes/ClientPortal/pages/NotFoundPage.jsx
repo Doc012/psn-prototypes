@@ -11,7 +11,7 @@ const NotFoundPage = () => {
           <p className="mt-3 text-lg text-gray-600">Sorry, we couldn't find the page you're looking for.</p>
           <div className="mt-8">
             <Link
-              to="/"
+              to="/client-portal"
               className="inline-flex items-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000]"
             >
               Go back home

@@ -35,8 +35,12 @@ const ClientProfilePage = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [userActivity, setUserActivity] = useState([]);
+  const [toastMessage, setToastMessage] = useState(null);
 
-  // Form states
+  // Current date for reference
+  const currentDate = new Date();
+  
+  // Form states with more current birthdate
   const [formData, setFormData] = useState({
     firstName: user?.firstName || 'John',
     lastName: user?.lastName || 'Doe',
@@ -48,7 +52,7 @@ const ClientProfilePage = () => {
     zipCode: user?.zipCode || '12345',
     occupation: user?.occupation || 'Software Developer',
     employer: user?.employer || 'Tech Company Inc.',
-    birthDate: user?.birthDate || '1980-01-01',
+    birthDate: user?.birthDate || '1985-06-15', // Updated to a more recent date
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -61,17 +65,24 @@ const ClientProfilePage = () => {
     marketingCommunications: false
   });
 
-  // Fetch user activity
+  // Helper function to create recent dates
+  const getRecentDate = (daysAgo) => {
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    return date.toISOString();
+  };
+
+  // Fetch user activity with recent realistic dates
   useEffect(() => {
     // In a real app, this would be an API call
     const mockActivity = [
-      { id: 1, type: 'login', description: 'Logged in from Chrome on Windows', date: '2023-05-20T14:30:00' },
-      { id: 2, type: 'document', description: 'Uploaded document "Settlement Agreement.pdf"', date: '2023-05-19T10:15:00' },
-      { id: 3, type: 'password', description: 'Changed account password', date: '2023-05-15T09:22:00' },
-      { id: 4, type: 'profile', description: 'Updated contact information', date: '2023-05-10T16:45:00' },
-      { id: 5, type: 'login', description: 'Logged in from Safari on MacOS', date: '2023-05-08T08:30:00' },
-      { id: 6, type: 'billing', description: 'Updated payment information', date: '2023-05-05T11:10:00' },
-      { id: 7, type: 'login', description: 'Logged in from Firefox on Windows', date: '2023-05-01T13:25:00' },
+      { id: 1, type: 'login', description: 'Logged in from Chrome on Windows', date: getRecentDate(0) }, // Today
+      { id: 2, type: 'document', description: 'Uploaded document "Settlement Agreement.pdf"', date: getRecentDate(1) }, // Yesterday
+      { id: 3, type: 'password', description: 'Changed account password', date: getRecentDate(5) }, // 5 days ago
+      { id: 4, type: 'profile', description: 'Updated contact information', date: getRecentDate(8) }, // 8 days ago
+      { id: 5, type: 'login', description: 'Logged in from Safari on MacOS', date: getRecentDate(12) }, // 12 days ago
+      { id: 6, type: 'billing', description: 'Updated payment information', date: getRecentDate(18) }, // 18 days ago
+      { id: 7, type: 'login', description: 'Logged in from Firefox on Windows', date: getRecentDate(25) }, // 25 days ago
     ];
     
     setUserActivity(mockActivity);
@@ -99,9 +110,15 @@ const ClientProfilePage = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setProfileImage(e.target.result);
+        showToast("Profile image updated successfully", "success");
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const showToast = (message, type = "info") => {
+    setToastMessage({ text: message, type });
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleSubmit = (e) => {
@@ -112,8 +129,8 @@ const ClientProfilePage = () => {
     setTimeout(() => {
       setLoading(false);
       setIsEditing(false);
-      // Show success message or notification
-      alert('Profile updated successfully!');
+      // Show success message with toast
+      showToast("Profile updated successfully!", "success");
     }, 1000);
   };
 
@@ -123,7 +140,7 @@ const ClientProfilePage = () => {
     
     // Validate passwords
     if (formData.newPassword !== formData.confirmPassword) {
-      alert('New passwords do not match');
+      showToast("New passwords do not match", "error");
       setLoading(false);
       return;
     }
@@ -137,9 +154,45 @@ const ClientProfilePage = () => {
         newPassword: '',
         confirmPassword: ''
       }));
-      // Show success message or notification
-      alert('Password changed successfully!');
+      // Show success message with toast
+      showToast("Password changed successfully!", "success");
     }, 1000);
+  };
+
+  const handleCopyToClipboard = () => {
+    const profileText = `${formData.firstName} ${formData.lastName}\n${formData.email}\n${formData.phone}`;
+    navigator.clipboard.writeText(profileText)
+      .then(() => {
+        showToast("Contact information copied to clipboard", "success");
+      })
+      .catch(err => {
+        showToast("Failed to copy information", "error");
+      });
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      return `Today at ${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
   };
 
   const getActivityIcon = (type) => {
@@ -171,7 +224,7 @@ const ClientProfilePage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-6">
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex">
+            <nav className="-mb-px flex overflow-x-auto">
               <button
                 className={`${
                   activeTab === 'personal'
@@ -259,6 +312,7 @@ const ClientProfilePage = () => {
                       <button 
                         className="text-[#800000] hover:text-[#600000]"
                         title="Copy to clipboard"
+                        onClick={handleCopyToClipboard}
                       >
                         <HiOutlineClipboardCopy className="h-4 w-4" />
                       </button>
@@ -429,6 +483,7 @@ const ClientProfilePage = () => {
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={() => setActiveTab('security')}
                         className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-[#800000] hover:text-[#600000] transition-colors"
                       >
@@ -444,90 +499,103 @@ const ClientProfilePage = () => {
           {/* Account & Security Tab */}
           {activeTab === 'security' && (
             <div className="p-6">
+              <div className="mb-6 bg-yellow-50 p-4 rounded-md border border-yellow-100">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <HiOutlineExclamationCircle className="h-5 w-5 text-yellow-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700">
+                      Your password was last changed <strong>5 days ago</strong>. For security purposes, we recommend changing your password every 90 days.
+                    </p>
+                  </div>
+                </div>
+              </div>
               <form onSubmit={handlePasswordChange}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
+                  <div className="relative">
                     <label className="block text-sm font-medium text-gray-700">
                       Current Password
                     </label>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="currentPassword"
-                      value={formData.currentPassword}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(prev => !prev)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm"
-                    >
-                      {showPassword ? (
-                        <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
-                      ) : (
-                        <HiOutlineEye className="h-5 w-5 text-gray-400" />
-                      )}
-                    </button>
+                    <div className="mt-1 relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="currentPassword"
+                        value={formData.currentPassword}
+                        onChange={handleInputChange}
+                        className="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(prev => !prev)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        {showPassword ? (
+                          <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
+                        ) : (
+                          <HiOutlineEye className="h-5 w-5 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <div>
+                  <div className="relative">
                     <label className="block text-sm font-medium text-gray-700">
                       New Password
                     </label>
-                    <input
-                      type={showNewPassword ? 'text' : 'password'}
-                      name="newPassword"
-                      value={formData.newPassword}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(prev => !prev)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm"
-                    >
-                      {showNewPassword ? (
-                        <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
-                      ) : (
-                        <HiOutlineEye className="h-5 w-5 text-gray-400" />
-                      )}
-                    </button>
+                    <div className="mt-1 relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        name="newPassword"
+                        value={formData.newPassword}
+                        onChange={handleInputChange}
+                        className="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(prev => !prev)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        {showNewPassword ? (
+                          <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
+                        ) : (
+                          <HiOutlineEye className="h-5 w-5 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <div>
+                  <div className="relative">
                     <label className="block text-sm font-medium text-gray-700">
                       Confirm Password
                     </label>
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(prev => !prev)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm"
-                    >
-                      {showConfirmPassword ? (
-                        <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
-                      ) : (
-                        <HiOutlineEye className="h-5 w-5 text-gray-400" />
-                      )}
-                    </button>
+                    <div className="mt-1 relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        className="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(prev => !prev)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        {showConfirmPassword ? (
+                          <HiOutlineEyeOff className="h-5 w-5 text-gray-400" />
+                        ) : (
+                          <HiOutlineEye className="h-5 w-5 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end">
-                  {isEditing && (
-                    <button
-                      type="submit"
-                      className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] transition-colors"
-                    >
-                      {loading ? 'Changing...' : 'Change Password'}
-                    </button>
-                  )}
+                  <button
+                    type="submit"
+                    className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] transition-colors"
+                  >
+                    {loading ? 'Changing...' : 'Change Password'}
+                  </button>
                 </div>
               </form>
             </div>
@@ -536,7 +604,10 @@ const ClientProfilePage = () => {
           {/* Notifications Tab */}
           {activeTab === 'notifications' && (
             <div className="p-6">
-              <form>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                showToast("Notification preferences saved", "success");
+              }}>
                 <div className="space-y-4">
                   <div className="flex items-center">
                     <input
@@ -672,12 +743,12 @@ const ClientProfilePage = () => {
                     <div className="flex-shrink-0">
                       {getActivityIcon(activity.type)}
                     </div>
-                    <div className="ml-3">
+                    <div className="ml-3 flex-grow">
                       <p className="text-sm font-medium text-gray-900">
                         {activity.description}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(activity.date).toLocaleString()}
+                        {formatDate(activity.date)}
                       </p>
                     </div>
                   </div>
@@ -687,6 +758,51 @@ const ClientProfilePage = () => {
           )}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 z-50 animate-fade-in-up">
+          <div className={`rounded-md p-4 shadow-lg ${
+            toastMessage.type === 'success' ? 'bg-green-50 text-green-800' : 
+            toastMessage.type === 'error' ? 'bg-red-50 text-red-800' : 
+            'bg-blue-50 text-blue-800'
+          }`}>
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                {toastMessage.type === 'success' ? (
+                  <HiOutlineCheck className="h-5 w-5 text-green-400" />
+                ) : toastMessage.type === 'error' ? (
+                  <HiOutlineExclamation className="h-5 w-5 text-red-400" />
+                ) : (
+                  <HiOutlineInformationCircle className="h-5 w-5 text-blue-400" />
+                )}
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium">{toastMessage.text}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <div className="-mx-1.5 -my-1.5">
+                  <button
+                    onClick={() => setToastMessage(null)}
+                    className={`inline-flex rounded-md p-1.5 ${
+                      toastMessage.type === 'success' ? 'text-green-500 hover:bg-green-100' : 
+                      toastMessage.type === 'error' ? 'text-red-500 hover:bg-red-100' : 
+                      'text-blue-500 hover:bg-blue-100'
+                    } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      toastMessage.type === 'success' ? 'focus:ring-green-600' : 
+                      toastMessage.type === 'error' ? 'focus:ring-red-600' : 
+                      'focus:ring-blue-600'
+                    }`}
+                  >
+                    <span className="sr-only">Dismiss</span>
+                    <HiOutlineX className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

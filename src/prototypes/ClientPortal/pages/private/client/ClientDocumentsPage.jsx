@@ -20,6 +20,7 @@ import {
   HiOutlinePlus,
   HiOutlineClock,
   HiOutlineStar,
+  HiStar, // Add this import
   HiOutlineClipboardCopy,
   HiOutlineShare,
   HiOutlinePencilAlt,
@@ -73,6 +74,9 @@ const ClientDocumentsPage = () => {
   const [selectedCase, setSelectedCase] = useState('');
   const [showDetailSidebar, setShowDetailSidebar] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState('documents'); // 'documents' or 'folders'
+  const [isDownloading, setIsDownloading] = useState(null);
+  const [activeActionMenu, setActiveActionMenu] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
   
   const fileInputRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -652,23 +656,37 @@ const ClientDocumentsPage = () => {
   
   // Handle document preview
   const handlePreview = (document) => {
-    setPreviewDocument(document);
-    setIsPreviewOpen(true);
-    
-    // Update lastViewed timestamp in the local state
-    setDocuments(prev => 
-      prev.map(doc => 
-        doc.id === document.id 
-          ? { ...doc, lastViewed: new Date().toISOString() } 
-          : doc
-      )
-    );
-    
-    // Update recently viewed
-    setRecentlyViewed(prev => {
-      const filtered = prev.filter(doc => doc.id !== document.id);
-      return [document, ...filtered].slice(0, 3);
+    // Show loading toast notification
+    setToastMessage({
+      text: `Opening ${document.name}...`,
+      type: 'info'
     });
+    
+    // Set the document to preview
+    setPreviewDocument(document);
+    
+    // Add a small delay to simulate document loading
+    setTimeout(() => {
+      setIsPreviewOpen(true);
+      
+      // Update lastViewed timestamp in the local state
+      setDocuments(prev => 
+        prev.map(doc => 
+          doc.id === document.id 
+            ? { ...doc, lastViewed: new Date().toISOString() } 
+            : doc
+        )
+      );
+      
+      // Update recently viewed
+      setRecentlyViewed(prev => {
+        const filtered = prev.filter(doc => doc.id !== document.id);
+        return [document, ...filtered].slice(0, 3);
+      });
+      
+      // Clear the toast notification when preview opens
+      setToastMessage(null);
+    }, 800);
   };
   
   // Handle folder creation
@@ -750,7 +768,11 @@ const ClientDocumentsPage = () => {
   };
   
   // Handle tag filtering
-  const toggleTagFilter = (tag) => {
+  const toggleTagFilter = (tag, e) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    
     setSelectedTags(prev => {
       if (prev.includes(tag)) {
         return prev.filter(t => t !== tag);
@@ -758,6 +780,16 @@ const ClientDocumentsPage = () => {
         return [...prev, tag];
       }
     });
+    
+    // On mobile, scroll to results after filtering
+    if (window.innerWidth < 768) {
+      setTimeout(() => {
+        const documentsTable = document.querySelector('.documents-section');
+        if (documentsTable) {
+          documentsTable.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
   };
   
   // Clear all filters
@@ -771,6 +803,7 @@ const ClientDocumentsPage = () => {
   
   // Toggle document star status
   const toggleDocumentStar = (docId) => {
+    // Update the documents array
     setDocuments(prev => 
       prev.map(doc => 
         doc.id === docId 
@@ -778,6 +811,186 @@ const ClientDocumentsPage = () => {
           : doc
       )
     );
+    
+    // Also update the recentlyViewed array
+    setRecentlyViewed(prev => 
+      prev.map(doc => 
+        doc.id === docId 
+          ? { ...doc, starred: !doc.starred } 
+          : doc
+      )
+    );
+  };
+  
+  // Add this helper function near the beginning of your component
+  const showToast = (text, type = 'info', duration = 3000) => {
+    setToastMessage({ text, type });
+    
+    // Automatically clear toast after the specified duration
+    setTimeout(() => setToastMessage(null), duration);
+  };
+  
+  // Add this function to handle downloads with loading state
+  const handleDownload = (document) => {
+    // Show download indicator
+    setIsDownloading(document.id);
+    
+    // Show download starting toast
+    showToast(`Downloading ${document.name}...`, 'info');
+    
+    // Simulate API call delay with realistic timing based on file size
+    const fileSize = parseInt(document.size);
+    const downloadTime = fileSize > 1000 ? 1000 : 500; // Bigger files take longer
+    
+    setTimeout(() => {
+      // For PDF files with preview URLs, open in new tab first
+      if (document.previewUrl && document.type.includes('pdf')) {
+        window.open(document.previewUrl, '_blank');
+      }
+      
+      // Create a temporary blob URL for demonstration
+      const blob = new Blob([`This is a simulated download of ${document.name}`], 
+        { type: document.type || 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create and trigger download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = document.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      
+      // Update the document in state to reflect the download
+      setDocuments(prev => prev.map(doc => 
+        doc.id === document.id 
+          ? { ...doc, downloadCount: (doc.downloadCount || 0) + 1 }
+          : doc
+      ));
+      
+      // Show success toast that automatically disappears after 3 seconds
+      showToast(`${document.name} downloaded successfully`, 'success');
+    }, downloadTime);
+  };
+  
+  // Add this function to handle document action menu
+  const toggleActionMenu = (docId, e) => {
+    e.stopPropagation();
+    setActiveActionMenu(activeActionMenu === docId ? null : docId);
+  };
+  
+  // Add this function to handle document action clicks
+  const handleDocumentAction = (action, document, e) => {
+    e.stopPropagation();
+    setActiveActionMenu(null);
+    
+    switch (action) {
+      case 'star':
+        toggleDocumentStar(document.id);
+        break;
+      case 'share':
+        handleShareDocument(document);
+        break;
+      case 'rename':
+        const newName = prompt('Enter new name:', document.name);
+        if (newName && newName.trim() !== '') {
+          setDocuments(prev => 
+            prev.map(doc => 
+              doc.id === document.id 
+                ? { ...doc, name: newName.trim() } 
+                : doc
+            )
+          );
+          showToast(`${document.name} renamed to ${newName.trim()}`, 'success');
+        }
+        break;
+      case 'tags':
+        alert(`Edit tags for ${document.name}`);
+        break;
+      case 'versions':
+        alert(`View version history for ${document.name}`);
+        break;
+      case 'delete':
+        if (window.confirm(`Are you sure you want to delete "${document.name}"?`)) {
+          setDocuments(prev => prev.filter(doc => doc.id !== document.id));
+          showToast(`${document.name} deleted`, 'success');
+        }
+        break;
+      default:
+        break;
+    }
+  };
+  
+  // Add global click handler to close action menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Only close if clicking outside an action menu button
+      if (activeActionMenu !== null && !event.target.closest('.action-menu-button')) {
+        setActiveActionMenu(null);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeActionMenu]);
+  
+  // Improved functionality for document download from preview modal
+  const handleDownloadFromPreview = () => {
+    if (!previewDocument) return;
+    
+    // Use the existing download function
+    handleDownload(previewDocument);
+    // Close the preview after download is initiated
+    setTimeout(() => setIsPreviewOpen(false), 500);
+  };
+  
+  // Improve filtering in advanced filters panel
+  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [caseNameFilter, setCaseNameFilter] = useState('');
+  
+  // Apply advanced filters
+  const applyAdvancedFilters = () => {
+    // This would update the filter logic in the useEffect that filters documents
+    // For now, just show a toast message
+    setToastMessage({
+      text: 'Filters applied successfully',
+      type: 'success'
+    });
+    setTimeout(() => setToastMessage(null), 3000);
+    setShowFilterPanel(false);
+  };
+  
+  // Reset advanced filters
+  const resetAdvancedFilters = () => {
+    setStatusFilter('');
+    setTypeFilter('');
+    setCaseNameFilter('');
+    setToastMessage({
+      text: 'Filters reset',
+      type: 'info'
+    });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+  
+  // Share document functionality
+  const handleShareDocument = (document) => {
+    // Simulate sharing functionality
+    const link = `https://example.com/share/${document.id}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(link).then(() => {
+      setToastMessage({
+        text: `Link to ${document.name} copied to clipboard`,
+        type: 'success'
+      });
+      setTimeout(() => setToastMessage(null), 3000);
+    });
   };
   
   if (loading) {
@@ -951,7 +1164,7 @@ const ClientDocumentsPage = () => {
                 <div className="mt-6 flex justify-end">
                   <button
                     type="button"
-                    className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#800000] border border-transparent rounded-md hover:bg-[#600000] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#800000]"
+                    className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#800000] border border-transparent rounded-md hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     onClick={() => setShowFileSizeWarning(false)}
                   >
                     Understood
@@ -993,7 +1206,7 @@ const ClientDocumentsPage = () => {
         </div>
       )}
       
-      {/* Recently viewed */}
+      {/* Recently viewed - modified to be non-clickable */}
       {recentlyViewed.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-6">
           <div className="bg-white shadow rounded-lg mb-6">
@@ -1002,30 +1215,67 @@ const ClientDocumentsPage = () => {
                 <HiOutlineClock className="mr-2 h-5 w-5 text-gray-400" />
                 Recently Viewed
               </h3>
+              <button 
+                className="text-sm text-[#800000] hover:text-[#600000] hidden sm:block"
+                onClick={() => setActiveMobileTab('documents')}
+              >
+                View All Documents
+              </button>
             </div>
-            <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {recentlyViewed.map(doc => (
                 <div 
                   key={doc.id} 
-                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition duration-150 ease-in-out relative group"
+                  className="p-4 border border-gray-200 rounded-lg relative hover:bg-gray-50 transition-colors duration-150 cursor-pointer group"
                   onClick={() => handlePreview(doc)}
                 >
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-2 right-2">
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
+                        
+                        // Apply animation class for visual feedback
+                        const starButton = e.currentTarget;
+                        starButton.classList.add('star-animation');
+                        
+                        // Toggle star status in documents array
                         toggleDocumentStar(doc.id);
+                        
+                        // Show feedback toast
+                        showToast(
+                          doc.starred ? 
+                          `Removed star from ${doc.name}` : 
+                          `Added star to ${doc.name}`,
+                          'success'
+                        );
+                        
+                        // Remove animation class after animation completes
+                        setTimeout(() => {
+                          starButton.classList.remove('star-animation');
+                        }, 500);
                       }}
-                      className={`${doc.starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+                      className={`${
+                        doc.starred 
+                          ? 'text-yellow-500 hover:text-yellow-600' 
+                          : 'text-gray-400 hover:text-yellow-500'
+                      } transition-all duration-200 transform hover:scale-110`}
+                      aria-label={doc.starred ? "Remove from favorites" : "Add to favorites"}
+                      title={doc.starred ? "Remove from favorites" : "Add to favorites"}
                     >
-                      <HiOutlineStar className="h-5 w-5" />
+                      {doc.starred ? (
+                        <HiStar className="h-5 w-5" />
+                      ) : (
+                        <HiOutlineStar className="h-5 w-5 group-hover:text-yellow-400" />
+                      )}
                     </button>
                   </div>
-                  <div className="flex items-center">
-                    {getDocumentIcon(doc.type)}
-                    <div className="ml-3">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      {getDocumentIcon(doc.type)}
+                    </div>
+                    <div className="ml-3 flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
-                      <div className="flex items-center mt-1">
+                      <div className="flex flex-wrap items-center mt-1">
                         <p className="text-xs text-gray-500 mr-2">{formatRelativeDate(doc.lastViewed)}</p>
                         {doc.needsAction && (
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
@@ -1034,6 +1284,37 @@ const ClientDocumentsPage = () => {
                             {doc.actionType === 'review' ? 'Review' : 'Sign'}
                           </span>
                         )}
+                      </div>
+                      <div className="mt-2 flex space-x-2">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Use the existing view document functionality
+                            if (doc.previewUrl) {
+                              showToast(`Opening ${doc.name}...`, 'info');
+                              setTimeout(() => {
+                                window.open(doc.previewUrl, '_blank');
+                                showToast(`${doc.name} opened in new tab`, 'success');
+                              }, 500);
+                            } else {
+                              showToast(`Preview not available for ${doc.name}`, 'info');
+                            }
+                          }}
+                          className="text-xs text-gray-500 hover:text-[#800000] flex items-center"
+                        >
+                          <HiOutlineEye className="h-3.5 w-3.5 mr-1" />
+                          View
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(doc);
+                          }}
+                          className="text-xs text-gray-500 hover:text-[#800000] flex items-center"
+                        >
+                          <HiOutlineDownload className="h-3.5 w-3.5 mr-1" />
+                          Download
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1174,7 +1455,7 @@ const ClientDocumentsPage = () => {
                         selectedTags.includes(tag)
                           ? 'bg-[#800000] text-white'
                           : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                      }`}
+                      } mr-1 mb-1`}
                     >
                       {tag}
                       {selectedTags.includes(tag) && (
@@ -1343,6 +1624,8 @@ const ClientDocumentsPage = () => {
                         <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700">Status</label>
                         <select
                           id="status-filter"
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
                           className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm rounded-md"
                         >
                           <option value="">All Statuses</option>
@@ -1357,6 +1640,8 @@ const ClientDocumentsPage = () => {
                         <label htmlFor="type-filter" className="block text-sm font-medium text-gray-700">Document Type</label>
                         <select
                           id="type-filter"
+                          value={typeFilter}
+                          onChange={(e) => setTypeFilter(e.target.value)}
                           className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm rounded-md"
                         >
                           <option value="">All Types</option>
@@ -1372,6 +1657,8 @@ const ClientDocumentsPage = () => {
                         <label htmlFor="case-filter" className="block text-sm font-medium text-gray-700">Case</label>
                         <select
                           id="case-filter"
+                          value={caseNameFilter}
+                          onChange={(e) => setCaseNameFilter(e.target.value)}
                           className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm rounded-md"
                         >
                           <option value="">All Cases</option>
@@ -1384,11 +1671,13 @@ const ClientDocumentsPage = () => {
                     
                     <div className="mt-4 flex justify-end space-x-2">
                       <button
+                        onClick={resetAdvancedFilters}
                         className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                       >
                         Reset
                       </button>
                       <button
+                        onClick={applyAdvancedFilters}
                         className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                       >
                         Apply Filters
@@ -1419,7 +1708,7 @@ const ClientDocumentsPage = () => {
                         className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                       >
                         <HiOutlineDownload className="-ml-0.5 mr-2 h-4 w-4" />
-                        Download
+                                                                                                                                           Download
                       </button>
                       <button
                         onClick={() => handleBulkAction('move')}
@@ -1472,6 +1761,7 @@ const ClientDocumentsPage = () => {
                             Document
                             {sortField === 'name' && (
                               sortDirection === 'asc' 
+ 
                                 ? <HiOutlineSortAscending className="ml-1 h-4 w-4" />
                                 : <HiOutlineSortDescending className="ml-1 h-4 w-4" />
                             )}
@@ -1534,7 +1824,7 @@ const ClientDocumentsPage = () => {
                                     {document.name}
                                   </span>
                                   {document.starred && (
-                                    <HiOutlineStar className="ml-1 h-4 w-4 flex-shrink-0 text-yellow-500" />
+                                    <HiStar className="ml-1 h-4 w-4 flex-shrink-0 text-yellow-500" />
                                   )}
                                   {document.version > 1 && (
                                     <span className="ml-2 px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-600 flex-shrink-0">
@@ -1586,69 +1876,183 @@ const ClientDocumentsPage = () => {
                               <button
                                 className="text-[#800000] hover:text-[#600000]"
                                 title="View"
-                                onClick={() => handlePreview(document)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  
+                                  // Instead of opening the modal, we'll show a toast and simulate opening in a new tab
+                                  setToastMessage({
+                                    text: `Opening ${document.name}...`,
+                                    type: 'info'
+                                  });
+                                  
+                                  // Simulate opening document in a new tab if it has a preview URL
+                                  if (document.previewUrl) {
+                                    setTimeout(() => {
+                                      window.open(document.previewUrl, '_blank');
+                                      
+                                      // Update lastViewed timestamp in the local state
+                                      setDocuments(prev => 
+                                        prev.map(doc => 
+                                          doc.id === document.id 
+                                            ? { ...doc, lastViewed: new Date().toISOString() } 
+                                            : doc
+                                        )
+                                      );
+                                      
+                                      // Update recently viewed
+                                      setRecentlyViewed(prev => {
+                                        const filtered = prev.filter(doc => doc.id !== document.id);
+                                        return [document, ...filtered].slice(0, 3);
+                                      });
+                                      
+                                      setToastMessage({
+                                        text: `${document.name} opened in new tab`,
+                                        type: 'success'
+                                      });
+                                      setTimeout(() => setToastMessage(null), 3000);
+                                    }, 1000);
+                                  } else {
+                                    // If no preview URL, offer download instead
+                                    setTimeout(() => {
+                                      setToastMessage({
+                                        text: `Preview not available for ${document.name}. You can download it instead.`,
+                                        type: 'info'
+                                      });
+                                      setTimeout(() => setToastMessage(null), 3000);
+                                    }, 1000);
+                                  }
+                                }}
                               >
                                 <HiOutlineEye className="h-5 w-5" />
                               </button>
+                              
                               <button
                                 className="text-[#800000] hover:text-[#600000]"
                                 title="Download"
-                                onClick={() => window.open(`/api/documents/${document.id}/download`, '_blank')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  
+                                  // Show download starting toast
+                                  setToastMessage({
+                                    text: `Downloading ${document.name}...`,
+                                    type: 'info'
+                                  });
+                                  
+                                  // Simulate API call delay with realistic timing based on file size
+                                  const fileSize = parseInt(document.size);
+                                  const downloadTime = fileSize > 1000 ? 1000 : 500; // Bigger files take longer
+                                  
+                                  setTimeout(() => {
+                                    // For PDF files with preview URLs, open in new tab first
+                                    if (document.previewUrl && document.type.includes('pdf')) {
+                                      window.open(document.previewUrl, '_blank');
+                                    }
+                                    
+                                    // Create a temporary blob URL for demonstration
+                                    const blob = new Blob([`This is a simulated download of ${document.name}`], 
+                                      { type: document.type || 'text/plain' });
+                                    const url = window.URL.createObjectURL(blob);
+                                    
+                                    // Create and trigger download link
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.download = document.name;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    
+                                    // Clean up
+                                    window.URL.revokeObjectURL(url);
+                                    
+                                    // Update the document in state to reflect the download
+                                    setDocuments(prev => prev.map(doc => 
+                                      doc.id === document.id 
+                                        ? { ...doc, downloadCount: (doc.downloadCount || 0) + 1 }
+                                        : doc
+                                    ));
+                                    
+                                    // Show success toast that automatically disappears after 3 seconds
+                                    setToastMessage({
+                                      text: `${document.name} downloaded successfully`,
+                                      type: 'success'
+                                    });
+                                    
+                                    // Automatically clear toast after 3 seconds - no need for additional setTimeout
+                                    setTimeout(() => setToastMessage(null), 3000);
+                                  }, downloadTime);
+                                }}
                               >
                                 <HiOutlineDownload className="h-5 w-5" />
                               </button>
-                              <div className="relative inline-block text-left group">
+                              
+                              <div className="relative">
                                 <button
-                                  className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                                  className="text-gray-400 hover:text-gray-500 focus:outline-none action-menu-button"
+                                  onClick={(e) => toggleActionMenu(document.id, e)}
                                 >
                                   <HiOutlineAdjustments className="h-5 w-5" />
                                 </button>
-                                <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden group-hover:block z-10">
-                                  <div className="py-1" role="menu" aria-orientation="vertical">
-                                    <button
-                                      className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
-                                      role="menuitem"
-                                    >
-                                      <HiOutlineStar className="inline-block mr-2 h-4 w-4" />
-                                      {document.starred ? 'Remove Star' : 'Add Star'}
-                                    </button>
-                                    <button
-                                      className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
-                                      role="menuitem"
-                                    >
-                                      <HiOutlineShare className="inline-block mr-2 h-4 w-4" />
-                                      Share
-                                    </button>
-                                    <button
-                                      className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
-                                      role="menuitem"
-                                    >
-                                      <HiOutlinePencilAlt className="inline-block mr-2 h-4 w-4" />
-                                      Rename
-                                    </button>
-                                    <button
-                                      className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
-                                      role="menuitem"
-                                    >
-                                      <HiOutlineTag className="inline-block mr-2 h-4 w-4" />
-                                      Edit Tags
-                                    </button>
-                                    <button
-                                      className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
-                                      role="menuitem"
-                                    >
-                                      <HiOutlineDocumentDuplicate className="inline-block mr-2 h-4 w-4" />
-                                      Version History
-                                    </button>
-                                    <button
-                                      className="text-red-600 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
-                                      role="menuitem"
-                                    >
-                                      <HiOutlineTrash className="inline-block mr-2 h-4 w-4" />
-                                      Delete
-                                    </button>
+            
+                                {activeActionMenu === document.id && (
+                                  <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                                    <div className="py-1" role="menu" aria-orientation="vertical">
+                                      <button
+                                        className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
+                                        role="menuitem"
+                                        onClick={(e) => handleDocumentAction('star', document, e)}
+                                      >
+                                        <HiOutlineStar className={`inline-block mr-2 h-4 w-4 ${document.starred ? 'text-yellow-500' : ''}`} />
+                                        {document.starred ? 'Remove Star' : 'Add Star'}
+                                      </button>
+                                      <button
+                                        className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
+                                        role="menuitem"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleShareDocument(document);
+                                          setActiveActionMenu(null);
+                                        }}
+                                      >
+                                        <HiOutlineShare className="inline-block mr-2 h-4 w-4" />
+                                        Share
+                                      </button>
+                                      <button
+                                        className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
+                                        role="menuitem"
+                                        onClick={(e) => handleDocumentAction('rename', document, e)}
+                                      >
+                                        <HiOutlinePencilAlt className="inline-block mr-2 h-4 w-4" />
+                                        Rename
+                                      </button>
+                                      <button
+                                        className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
+                                        role="menuitem"
+                                        onClick={(e) => handleDocumentAction('tags', document, e)}
+                                      >
+                                        <HiOutlineTag className="inline-block mr-2 h-4 w-4" />
+                                        Edit Tags
+                                      </button>
+                                      {document.version > 1 && (
+                                        <button
+                                          className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
+                                          role="menuitem"
+                                          onClick={(e) => handleDocumentAction('versions', document, e)}
+                                        >
+                                          <HiOutlineDocumentDuplicate className="inline-block mr-2 h-4 w-4" />
+                                          Version History
+                                        </button>
+                                      )}
+                                      <button
+                                        className="text-red-600 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
+                                        role="menuitem"
+                                        onClick={(e) => handleDocumentAction('delete', document, e)}
+                                      >
+                                        <HiOutlineTrash className="inline-block mr-2 h-4 w-4" />
+                                        Delete
+                                      </button>
+                                    </div>
                                   </div>
-                                </div>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -1743,15 +2147,49 @@ const ClientDocumentsPage = () => {
                     </div>
                   ) : (
                     <div className="bg-gray-100 rounded-lg p-8 text-center h-[70vh] flex flex-col items-center justify-center">
-                      <HiOutlineDocumentText className="h-16 w-16 text-gray-400 mb-4" />
-                      <h4 className="text-lg font-medium text-gray-900 mb-2">
-                        Preview not available
-                      </h4>
-                      <p className="text-gray-500 mb-4">
-                        This document type cannot be previewed in the browser.
-                      </p>
+                      {/* For PDF documents without preview URL */}
+                      {previewDocument?.type?.includes('pdf') ? (
+                        <>
+                          <div className="p-6 bg-white shadow-md rounded-lg max-w-3xl mx-auto border border-gray-300 mb-4">
+                            <div className="flex justify-between mb-4">
+                              <div>
+                                <h2 className="text-xl font-bold text-gray-800">DOCUMENT</h2>
+                                <p className="text-gray-600">{previewDocument.name}</p>
+                              </div>
+                              <div className="text-right">
+                                <h3 className="text-lg font-semibold text-[#800000]">PSN Attorneys</h3>
+                                <p className="text-gray-600">123 Legal Street</p>
+                                <p className="text-gray-600">Cape Town, 8001</p>
+                              </div>
+                            </div>
+                            
+                            <div className="border-t border-gray-200 pt-4 mt-4">
+                              <p className="text-gray-700">
+                                This document is related to the case: 
+                                <span className="font-semibold">{previewDocument.caseRef?.name || "No case reference"}</span>
+                              </p>
+                              <p className="text-gray-700 mt-2">
+                                {previewDocument.description || "No description available."}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-gray-500 mb-4">
+                            This is a document preview. Download the document to view the full content.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <HiOutlineDocumentText className="h-16 w-16 text-gray-400 mb-4" />
+                          <h4 className="text-lg font-medium text-gray-900 mb-2">
+                            Preview not available
+                          </h4>
+                          <p className="text-gray-500 mb-4">
+                            This document type cannot be previewed in the browser.
+                          </p>
+                        </>
+                      )}
                       <button
-                        onClick={() => window.open(`/api/documents/${previewDocument?.id}/download`, '_blank')}
+                        onClick={handleDownloadFromPreview}
                         className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                       >
                         <HiOutlineDownload className="-ml-1 mr-2 h-5 w-5" />
@@ -1773,13 +2211,45 @@ const ClientDocumentsPage = () => {
                   </div>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => window.open(`/api/documents/${previewDocument?.id}/download`, '_blank')}
+                      onClick={() => {
+                        if (previewDocument) {
+                          toggleDocumentStar(previewDocument.id);
+                          setToastMessage({
+                            text: previewDocument.starred ? 
+                              `Removed star from ${previewDocument.name}` : 
+                              `Added star to ${previewDocument.name}`,
+                            type: 'success'
+                          });
+                          setTimeout(() => setToastMessage(null), 3000);
+                        }
+                      }}
+                      className={`inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]`}
+                    >
+                      {previewDocument?.starred ? (
+                        <>
+                          <HiOutlineStar className="-ml-1 mr-2 h-5 w-5 text-yellow-500" />
+                          Starred
+                        </>
+                      ) : (
+                        <>
+                          <HiOutlineStar className="-ml-1 mr-2 h-5 w-5" />
+                          Star
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleDownloadFromPreview}
                       className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     >
                       <HiOutlineDownload className="-ml-1 mr-2 h-5 w-5" />
                       Download
                     </button>
                     <button
+                      onClick={() => {
+                        if (previewDocument) {
+                          handleShareDocument(previewDocument);
+                        }
+                      }}
                       className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     >
                       <HiOutlineShare className="-ml-1 mr-2 h-5 w-5" />
@@ -1787,11 +2257,90 @@ const ClientDocumentsPage = () => {
                     </button>
                   </div>
                 </div>
+                
+                {/* Document details and tags */}
+                {previewDocument && previewDocument.description && (
+                  <div className="mt-4 bg-gray-50 p-4 rounded-md">
+                    <h4 className="text-sm font-medium text-gray-700">Description</h4>
+                    <p className="mt-1 text-sm text-gray-500">{previewDocument.description}</p>
+                  </div>
+                )}
+
+                {previewDocument && previewDocument.tags && previewDocument.tags.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-700">Tags</h4>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {previewDocument.tags.map((tag, index) => (
+                        <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </Transition.Child>
           </div>
         </Dialog>
       </Transition>
+      
+      {/* Toast notification with color based on type */}
+      {toastMessage && (
+        <div className={`fixed bottom-4 right-4 z-50 max-w-md bg-white rounded-lg shadow-lg border-l-4 ${
+          toastMessage.type === 'success' ? 'border-green-500' : 
+          toastMessage.type === 'error' ? 'border-red-500' : 
+          toastMessage.type === 'info' ? 'border-blue-500' : 'border-yellow-500'
+        } p-4 flex items-center animate-slide-up`}>
+          <div className={`flex-shrink-0 ${
+            toastMessage.type === 'success' ? 'text-green-500' : 
+            toastMessage.type === 'error' ? 'text-red-500' : 
+            toastMessage.type === 'info' ? 'text-blue-500' : 'text-yellow-500'
+          }`}>
+            {toastMessage.type === 'success' ? <HiOutlineCheck className="h-5 w-5" /> : 
+             toastMessage.type === 'error' ? <HiOutlineX className="h-5 w-5" /> :
+             toastMessage.type === 'info' ? <HiOutlineInformationCircle className="h-5 w-5" /> :
+             <HiOutlineExclamation className="h-5 w-5" />}
+          </div>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-gray-900">{toastMessage.text}</p>
+          </div>
+          <button
+            className="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-500 rounded-lg p-1.5"
+            onClick={() => setToastMessage(null)}
+          >
+            <span className="sr-only">Dismiss</span>
+            <HiOutlineX className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Add animation style */}
+      <style>
+        {`
+          @keyframes slide-up {
+            from {
+              transform: translateY(1rem);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          .animate-slide-up {
+            animation: slide-up 0.3s ease-out forwards;
+          }
+          
+          @keyframes star-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.35); }
+            100% { transform: scale(1); }
+          }
+          .star-animation {
+            animation: star-pulse 0.5s ease-in-out;
+          }
+        `}
+      </style>
     </div>
   );
 };

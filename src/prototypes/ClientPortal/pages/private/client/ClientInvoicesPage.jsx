@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { format, parseISO, isPast, isThisMonth, isThisYear, addDays } from 'date-fns';
 import { 
   HiOutlineDocumentText, 
-  HiOutlineDownload, 
+  HiOutlineDownload,
   HiOutlineCash, 
   HiOutlineExclamation,
   HiOutlineExclamationCircle,
@@ -22,8 +22,12 @@ import {
   HiChevronDown,
   HiOutlineChartBar,
   HiOutlineBriefcase,
-  HiChevronRight
+  HiChevronRight,
+  HiOutlineX,
+  HiOutlineInformationCircle,
+  HiOutlineClipboardCopy
 } from 'react-icons/hi';
+import { Dialog, Transition } from '@headlessui/react';
 
 const ClientInvoicesPage = () => {
   const [loading, setLoading] = useState(true);
@@ -38,6 +42,19 @@ const ClientInvoicesPage = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState(null);
+  
+  // Add these near your other state variables
+  const [showPaymentHistoryModal, setShowPaymentHistoryModal] = useState(false);
+  const [showMakePaymentModal, setShowMakePaymentModal] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  
+  // Add with your other state variables
+  const [showPdfPreviewModal, setShowPdfPreviewModal] = useState(false);
+  const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState(null);
+  
+  // Add these at the top with your other state variables
+  const [showBankDetailsModal, setShowBankDetailsModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
   
   // Get current year for mock data
   const currentYear = new Date().getFullYear();
@@ -186,7 +203,39 @@ const ClientInvoicesPage = () => {
           }
         ];
         
+        // Generate some mock payment history data
+        const mockPaymentHistory = [
+          {
+            id: 'pay-001',
+            invoiceNumber: 'INV-2023-001',
+            amount: 5000,
+            date: format(oneMonthAgo, 'yyyy-MM-dd'),
+            paymentMethod: 'Credit Card',
+            reference: 'TXN123456',
+            status: 'Completed'
+          },
+          {
+            id: 'pay-002',
+            invoiceNumber: 'INV-2023-003',
+            amount: 2500,
+            date: format(twoWeeksAgo, 'yyyy-MM-dd'),
+            paymentMethod: 'Bank Transfer',
+            reference: 'EFT789012',
+            status: 'Completed'
+          },
+          {
+            id: 'pay-003',
+            invoiceNumber: 'INV-2023-004',
+            amount: 7500,
+            date: format(threeDaysAgo, 'yyyy-MM-dd'),
+            paymentMethod: 'Credit Card',
+            reference: 'TXN789123',
+            status: 'Completed'
+          }
+        ];
+        
         setInvoices(mockInvoices);
+        setPaymentHistory(mockPaymentHistory);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching invoices:', error);
@@ -404,6 +453,135 @@ const ClientInvoicesPage = () => {
     return { total, paid, unpaid, overdue };
   }, [invoices]);
   
+  const handleMockDownload = (documentType, reference = '') => {
+    setToastMessage({
+      text: `Preparing ${documentType} for download...`,
+      type: "info"
+    });
+    
+    setTimeout(() => {
+      let content = '';
+      
+      if (documentType.includes('Invoice')) {
+        // Create a text-based representation of an invoice
+        const invoice = invoices.find(inv => inv.number === reference) || {
+          number: reference,
+          issueDate: format(new Date(), 'yyyy-MM-dd'),
+          dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+          amount: 15000.00,
+          items: [
+            { description: 'Legal Services', hours: 4, rate: 3750, amount: 15000 }
+          ]
+        };
+        
+        content = `
+=================================================
+                  INVOICE ${invoice.number}
+=================================================
+
+PSN ATTORNEYS
+123 Legal Street
+Cape Town, 8001
+South Africa
+billing@psnattorneys.co.za
+
+-------------------------------------------------
+BILLED TO:
+Client Name
+123 Client Address
+Johannesburg, 2000
+South Africa
+
+-------------------------------------------------
+INVOICE DATE: ${formatDate(invoice.issueDate)}
+DUE DATE: ${formatDate(invoice.dueDate)}
+INVOICE TOTAL: ${formatCurrency(invoice.amount)}
+
+-------------------------------------------------
+INVOICE SUMMARY:
+-------------------------------------------------
+Description                    Hours    Rate     Amount
+${invoice.items.map(item => 
+  `${item.description.padEnd(30)} ${String(item.hours).padEnd(8)} ${formatCurrency(item.rate).padEnd(8)} ${formatCurrency(item.amount)}`
+).join('\n')}
+-------------------------------------------------
+TOTAL:                                   ${formatCurrency(invoice.amount)}
+
+-------------------------------------------------
+PAYMENT DETAILS:
+Bank: First National Bank
+Account Name: PSN Attorneys Trust Account
+Account Number: 62345678910
+Branch Code: 250655
+Reference: ${invoice.number}
+
+-------------------------------------------------
+Thank you for your business
+This is an automatically generated invoice and requires no signature
+Document generated on: ${format(new Date(), 'dd MMM yyyy HH:mm:ss')}
+`;
+      } else if (documentType.includes('Bank')) {
+        // Create a text-based representation of bank details
+        content = `
+=================================================
+                BANK ACCOUNT DETAILS
+=================================================
+
+PSN ATTORNEYS
+123 Legal Street
+Cape Town, 8001
+South Africa
+
+-------------------------------------------------
+BANK NAME: First National Bank
+ACCOUNT HOLDER: PSN Attorneys Trust Account
+ACCOUNT NUMBER: 62345678910
+BRANCH CODE: 250655
+SWIFT CODE (INTERNATIONAL): FIRNZAJJ
+REFERENCE FORMAT: Invoice # + Your Name
+
+-------------------------------------------------
+IMPORTANT INFORMATION:
+Please include your invoice number as reference when making a payment. 
+Once payment is made, please email proof of payment to billing@psnattorneys.co.za
+
+-------------------------------------------------
+Document generated on: ${format(new Date(), 'dd MMM yyyy HH:mm:ss')}
+`;
+      } else {
+        // Generic document
+        content = `
+=================================================
+                  ${documentType.toUpperCase()}
+=================================================
+
+Reference: ${reference}
+Generated on: ${format(new Date(), 'dd MMM yyyy HH:mm:ss')}
+
+This is a simulation for demonstration purposes only.
+`;
+      }
+      
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${documentType.toLowerCase().replace(/\s+/g, '-')}-${reference || 'document'}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      setToastMessage({
+        text: `${documentType} downloaded successfully`,
+        type: "success"
+      });
+      setTimeout(() => setToastMessage(null), 3000);
+    }, 1500);
+  };
+  
   if (loading) {
     return (
       <div className="py-6">
@@ -439,20 +617,20 @@ const ClientInvoicesPage = () => {
             </p>
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3">
-            <Link
-              to="/client-portal/invoices/history"
+            <button
+              onClick={() => setShowPaymentHistoryModal(true)}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
               <HiOutlineDocumentText className="-ml-1 mr-2 h-5 w-5 text-gray-500" />
               Payment History
-            </Link>
-            <Link
-              to="/client-portal/payments/make-payment"
+            </button>
+            <button
+              onClick={() => setShowMakePaymentModal(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
               <HiOutlineCash className="-ml-1 mr-2 h-5 w-5" />
               Make a Payment
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -776,16 +954,17 @@ const ClientInvoicesPage = () => {
                             </span>
                           </div>
                           <div className="flex space-x-2">
-                            <button
-                              className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                            <a 
                               onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(`/api/invoices/${invoice.id}/pdf`, '_blank');
+                                e.preventDefault();
+                                handleMockDownload('Invoice PDF', invoice.number);
                               }}
+                              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                              style={{ cursor: 'pointer' }}
                             >
-                              <HiOutlineDownload className="-ml-1 mr-1 h-4 w-4" />
-                              Download
-                            </button>
+                              <HiOutlineDownload className="-ml-0.5 mr-2 h-4 w-4" />
+                              Download PDF
+                            </a>
                             
                             {invoice.status.toLowerCase() !== 'paid' && (
                               <button
@@ -793,9 +972,9 @@ const ClientInvoicesPage = () => {
                                   e.stopPropagation();
                                   initiatePayment(invoice);
                                 }}
-                                className="inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                                className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                               >
-                                <HiOutlineCash className="-ml-1 mr-1 h-4 w-4" />
+                                <HiOutlineCash className="-ml-0.5 mr-2 h-4 w-4" />
                                 Pay Now
                               </button>
                             )}
@@ -966,15 +1145,16 @@ const ClientInvoicesPage = () => {
                           
                           {/* Action Buttons */}
                           <div className="mt-6 flex flex-wrap gap-3 border-t border-gray-200 pt-4">
-                            <a 
-                              href={`/api/invoices/${invoice.id}/pdf`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleMockDownload('Invoice PDF', invoice.number);
+                              }}
                               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                             >
                               <HiOutlineDownload className="-ml-0.5 mr-2 h-4 w-4" />
                               Download PDF
-                            </a>
+                            </button>
                             
                             {invoice.status.toLowerCase() !== 'paid' && (
                               <button
@@ -1051,12 +1231,21 @@ const ClientInvoicesPage = () => {
                     <p className="mt-2 text-sm text-gray-500">
                       Pay securely using your credit or debit card.
                     </p>
-                    <Link
-                      to="/client-portal/payments/card"
+                    <button
+                      onClick={() => {
+                        setShowMakePaymentModal(true);
+                        // Pre-select credit card in the payment modal
+                        // This is just a simulation - in a real app you would set the default value
+                        setToastMessage({
+                          text: "Credit card payment selected",
+                          type: "info"
+                        });
+                        setTimeout(() => setToastMessage(null), 3000);
+                      }}
                       className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     >
                       Pay with Card
-                    </Link>
+                    </button>
                   </div>
                 </div>
                 
@@ -1071,7 +1260,7 @@ const ClientInvoicesPage = () => {
                     </p>
                     <button
                       className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                      onClick={() => {/* Show bank details modal */}}
+                      onClick={() => setShowBankDetailsModal(true)}
                     >
                       View Bank Details
                     </button>
@@ -1087,12 +1276,19 @@ const ClientInvoicesPage = () => {
                     <p className="mt-2 text-sm text-gray-500">
                       Set up a flexible payment plan for large invoices.
                     </p>
-                    <Link
-                      to="/client-portal/payments/plan"
+                    <button
+                      onClick={() => {
+                        // Request a payment plan (simulated)
+                        setToastMessage({
+                          text: "Payment plan request submitted. Our billing team will contact you shortly.",
+                          type: "success"
+                        });
+                        setTimeout(() => setToastMessage(null), 4000);
+                      }}
                       className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     >
-                      Discuss Options
-                    </Link>
+                      Request Plan
+                    </button>
                   </div>
                 </div>
                 
@@ -1105,12 +1301,19 @@ const ClientInvoicesPage = () => {
                     <p className="mt-2 text-sm text-gray-500">
                       Contact our billing department for help with payments.
                     </p>
-                    <Link
-                      to="/client-portal/support/billing"
+                    <button
+                      onClick={() => {
+                        // Show email contact info (simulated)
+                        setToastMessage({
+                          text: "Contact our billing team at billing@psnattorneys.co.za or call +27 21 555 1234",
+                          type: "info"
+                        });
+                        setTimeout(() => setToastMessage(null), 5000);
+                      }}
                       className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     >
                       Contact Billing
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1160,16 +1363,564 @@ const ClientInvoicesPage = () => {
             </div>
           </div>
           
-          {/* Quick action floating button - only on mobile */}
-          <div className="fixed bottom-6 right-6 sm:hidden">
-            <Link 
-              to="/client-portal/payments/make-payment"
-              className="h-14 w-14 rounded-full bg-[#800000] shadow-lg flex items-center justify-center text-white"
-              aria-label="Make a payment"
-            >
-              <HiOutlineCash className="h-6 w-6" />
-            </Link>
+          {/* Payment History Modal */}
+          {showPaymentHistoryModal && (
+  <div className="fixed inset-0 z-10 overflow-y-auto">
+    <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+      <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+      
+      <div className="inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">Payment History</h3>
+          <button
+            onClick={() => setShowPaymentHistoryModal(false)}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <HiOutlineX className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <div className="mt-4">
+          {paymentHistory.length > 0 ? (
+            <div className="mt-4 flex flex-col">
+              <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                  <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Invoice
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Method
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Reference
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {paymentHistory.map((payment) => (
+                          <tr key={payment.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatDate(payment.date)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {payment.invoiceNumber}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatCurrency(payment.amount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {payment.paymentMethod}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {payment.reference}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                {payment.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <HiOutlineExclamation className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No payment history</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                You haven't made any payments yet.
+              </p>
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-6 flex justify-end">
+          <button
+            type="button"
+            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+            onClick={() => setShowPaymentHistoryModal(false)}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Make Payment Modal */}
+{showMakePaymentModal && (
+  <div className="fixed inset-0 z-10 overflow-y-auto">
+    <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+      <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+      
+      <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">Make a Payment</h3>
+          <button
+            onClick={() => setShowMakePaymentModal(false)}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <HiOutlineX className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <div className="mt-4">
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="invoice" className="block text-sm font-medium text-gray-700">
+                Select Invoice
+              </label>
+              <select
+                id="invoice"
+                name="invoice"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm rounded-md"
+                defaultValue=""
+              >
+                <option value="" disabled>Select an invoice to pay</option>
+                {invoices
+                  .filter(invoice => invoice.status.toLowerCase() !== 'paid')
+                  .map(invoice => (
+                    <option key={invoice.id} value={invoice.id}>
+                      {invoice.number} - {formatCurrency(invoice.amount)} ({invoice.status})
+                    </option>
+                  ))}
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="payment-method" className="block text-sm font-medium text-gray-700">
+                Payment Method
+              </label>
+              <select
+                id="payment-method"
+                name="payment-method"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm rounded-md"
+                defaultValue="credit-card"
+              >
+                <option value="credit-card">Credit Card</option>
+                <option value="bank-transfer">Bank Transfer</option>
+                <option value="payment-plan">Payment Plan</option>
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+                Payment Amount
+              </label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-500 sm:text-sm">R</span>
+                </div>
+                <input
+                  type="text"
+                  name="amount"
+                  id="amount"
+                  className="focus:ring-[#800000] focus:border-[#800000] block w-full pl-7 sm:text-sm border-gray-300 rounded-md"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-md">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <HiOutlineInformationCircle className="h-5 w-5 text-gray-400" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-gray-500">
+                    This is a demo. In a real application, this would connect to a secure payment gateway.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+        
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            type="button"
+            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+            onClick={() => setShowMakePaymentModal(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#800000] border border-transparent rounded-md hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+            onClick={() => {
+              // Simulate successful payment
+              alert('Payment successful!');
+              setShowMakePaymentModal(false);
+            }}
+          >
+            Process Payment
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* PDF Preview Modal */}
+{showPdfPreviewModal && selectedInvoiceForPreview && (
+  <div className="fixed inset-0 z-10 overflow-y-auto">
+    <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+      <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+      
+      <div className="inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">
+            Invoice {selectedInvoiceForPreview.number} - PDF Preview
+          </h3>
+          <button
+            onClick={() => setShowPdfPreviewModal(false)}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <HiOutlineX className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <div className="bg-gray-100 p-4 border border-gray-300 rounded-md">
+          <div className="min-h-[600px] bg-white shadow-md p-8 mx-auto max-w-3xl">
+            {/* Mock PDF Invoice */}
+            <div className="flex justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">INVOICE</h2>
+                <p className="text-gray-600">{selectedInvoiceForPreview.number}</p>
+              </div>
+              <div className="text-right">
+                <h3 className="text-xl font-semibold text-[#800000]">PSN Attorneys</h3>
+                <p className="text-gray-600">123 Legal Street</p>
+                <p className="text-gray-600">Cape Town, 8001</p>
+                <p className="text-gray-600">South Africa</p>
+                <p className="text-gray-600">billing@psnattorneys.co.za</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-8 mb-8">
+              <div>
+                <h4 className="text-gray-500 text-sm font-medium mb-2">BILLED TO</h4>
+                <p className="font-medium">Client Name</p>
+                <p className="text-gray-600">123 Client Address</p>
+                <p className="text-gray-600">Johannesburg, 2000</p>
+                <p className="text-gray-600">South Africa</p>
+              </div>
+              <div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-gray-500 text-sm font-medium mb-2">INVOICE DATE</h4>
+                    <p>{formatDate(selectedInvoiceForPreview.issueDate)}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-gray-500 text-sm font-medium mb-2">DUE DATE</h4>
+                    <p>{formatDate(selectedInvoiceForPreview.dueDate)}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-gray-500 text-sm font-medium mb-2">INVOICE TOTAL</h4>
+                    <p className="text-xl font-bold">{formatCurrency(selectedInvoiceForPreview.amount)}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-gray-500 text-sm font-medium mb-2">REFERENCE</h4>
+                    <p>{selectedInvoiceForPreview.caseRef}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mb-8">
+              <h4 className="text-gray-500 text-sm font-medium mb-2">INVOICE SUMMARY</h4>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-300">
+                    <th className="py-2 text-left">Description</th>
+                    <th className="py-2 text-right">Hours</th>
+                    <th className="py-2 text-right">Rate</th>
+                    <th className="py-2 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedInvoiceForPreview.items.map((item, index) => (
+                    <tr key={index} className="border-b border-gray-200">
+                      <td className="py-3">{item.description}</td>
+                      <td className="py-3 text-right">{item.hours}</td>
+                      <td className="py-3 text-right">{formatCurrency(item.rate)}</td>
+                      <td className="py-3 text-right">{formatCurrency(item.amount)}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold">
+                    <td colSpan="3" className="py-3 text-right">Total</td>
+                    <td className="py-3 text-right">{formatCurrency(selectedInvoiceForPreview.amount)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="mb-8">
+              <h4 className="text-gray-500 text-sm font-medium mb-2">PAYMENT DETAILS</h4>
+              <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                <p><span className="font-medium">Bank:</span> First National Bank</p>
+                <p><span className="font-medium">Account Name:</span> PSN Attorneys Trust Account</p>
+                <p><span className="font-medium">Account Number:</span> 62345678910</p>
+                <p><span className="font-medium">Branch Code:</span> 250655</p>
+                <p><span className="font-medium">Reference:</span> {selectedInvoiceForPreview.number}</p>
+              </div>
+            </div>
+            
+            <div className="text-center text-gray-500 text-sm mt-12">
+              <p>Thank you for your business</p>
+              <p>This is an automatically generated invoice and requires no signature</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            type="button"
+            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+            onClick={() => setShowPdfPreviewModal(false)}
+          >
+            Close
+          </button>
+          <button
+            type="button"
+
+            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#800000] border border-transparent rounded-md hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+            onClick={() => {
+              handleMockDownload('Invoice PDF', selectedInvoiceForPreview.number);
+              setShowPdfPreviewModal(false);
+            }}
+          >
+            Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Bank Details Modal */}
+{showBankDetailsModal && (
+  <div className="fixed inset-0 z-10 overflow-y-auto">
+    <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+      <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+      
+      <div className="inline-block w-full max-w-lg p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">
+            Bank Account Details
+          </h3>
+          <button
+            onClick={() => setShowBankDetailsModal(false)}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <HiOutlineX className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <div className="bg-gray-50 p-5 rounded-md">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-sm font-medium text-gray-700">Bank Name</p>
+              <p className="text-sm text-gray-900">First National Bank</p>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <p className="text-sm font-medium text-gray-700">Account Holder</p>
+              <p className="text-sm text-gray-900">PSN Attorneys Trust Account</p>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <p className="text-sm font-medium text-gray-700">Account Number</p>
+              <div className="flex items-center">
+                <p className="text-sm text-gray-900 mr-2">62345678910</p>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText("62345678910");
+                    setToastMessage({
+                      text: "Account number copied to clipboard",
+                      type: "success"
+                    });
+                    setTimeout(() => setToastMessage(null), 3000);
+                  }}
+                  className="text-[#800000] hover:text-[#600000]"
+                >
+                  <HiOutlineClipboardCopy className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <p className="text-sm font-medium text-gray-700">Branch Code</p>
+              <div className="flex items-center">
+                <p className="text-sm text-gray-900 mr-2">250655</p>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText("250655");
+                    setToastMessage({
+                      text: "Branch code copied to clipboard",
+                      type: "success"
+                    });
+                    setTimeout(() => setToastMessage(null), 3000);
+                  }}
+                  className="text-[#800000] hover:text-[#600000]"
+                >
+                  <HiOutlineClipboardCopy className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <p className="text-sm font-medium text-gray-700">Reference Format</p>
+              <p className="text-sm text-gray-900">Invoice # + Your Name</p>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <p className="text-sm font-medium text-gray-700">Swift Code (International)</p>
+              <div className="flex items-center">
+                <p className="text-sm text-gray-900 mr-2">FIRNZAJJ</p>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText("FIRNZAJJ");
+                    setToastMessage({
+                      text: "Swift code copied to clipboard",
+                      type: "success"
+                    });
+                    setTimeout(() => setToastMessage(null), 3000);
+                  }}
+                  className="text-[#800000] hover:text-[#600000]"
+                >
+                  <HiOutlineClipboardCopy className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 bg-blue-50 p-4 rounded-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <HiOutlineInformationCircle className="h-5 w-5 text-blue-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-blue-700">
+                  Please include your invoice number as reference when making a payment. Once payment is made, please email proof of payment to <span className="font-medium">billing@psnattorneys.co.za</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-6 flex justify-between space-x-3">
+          <button
+            type="button"
+            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+            onClick={() => {
+              // Download a bank details PDF (simulated)
+              setToastMessage({
+                text: "Bank details PDF downloading...",
+                type: "info"
+              });
+              setTimeout(() => {
+                setToastMessage({
+                  text: "Bank details PDF downloaded successfully",
+                  type: "success"
+                });
+                setTimeout(() => setToastMessage(null), 3000);
+              }, 1500);
+            }}
+          >
+            <HiOutlineDownload className="-ml-1 mr-2 h-5 w-5" />
+            Download PDF
+          </button>
+          <button
+            type="button"
+            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#800000] border border-transparent rounded-md hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+            onClick={() => setShowBankDetailsModal(false)}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Toast Notification */}
+{toastMessage && (
+  <div className="fixed bottom-5 right-5 z-50 animate-fade-in-up">
+    <div className={`rounded-md p-4 shadow-lg ${
+      toastMessage.type === 'success' ? 'bg-green-50 text-green-800' : 
+      toastMessage.type === 'error' ? 'bg-red-50 text-red-800' : 
+      'bg-blue-50 text-blue-800'
+    }`}>
+      <div className="flex items-center">
+        <div className="flex-shrink-0">
+          {toastMessage.type === 'success' ? (
+            <HiOutlineCheckCircle className="h-5 w-5 text-green-400" />
+          ) : toastMessage.type === 'error' ? (
+            <HiOutlineExclamation className="h-5 w-5 text-red-400" />
+          ) : (
+            <HiOutlineInformationCircle className="h-5 w-5 text-blue-400" />
+          )}
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium">{toastMessage.text}</p>
+        </div>
+        <div className="ml-auto pl-3">
+          <div className="-mx-1.5 -my-1.5">
+            <button
+              onClick={() => setToastMessage(null)}
+              className={`inline-flex rounded-md p-1.5 ${
+                toastMessage.type === 'success' ? 'text-green-500 hover:bg-green-100' : 
+                toastMessage.type === 'error' ? 'text-red-500 hover:bg-red-100' : 
+                'text-blue-500 hover:bg-blue-100'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                toastMessage.type === 'success' ? 'focus:ring-green-600' : 
+                toastMessage.type === 'error' ? 'focus:ring-red-600' : 
+                'focus:ring-blue-600'
+              }`}
+            >
+              <span className="sr-only">Dismiss</span>
+              <HiOutlineX className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Quick action floating button - only on mobile */}
+<div className="fixed bottom-6 right-6 sm:hidden">
+  <Link 
+    to="/client-portal/payments/make-payment"
+    className="h-14 w-14 rounded-full bg-[#800000] shadow-lg flex items-center justify-center text-white"
+    aria-label="Make a payment"
+  >
+    <HiOutlineCash className="h-6 w-6" />
+  </Link>
+</div>
         </div>
       </div>
     </div>

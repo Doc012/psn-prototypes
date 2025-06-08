@@ -17,3 +17,19 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
   background: #800000; /* thumb color */
   border-radius: 8px;
 }
+
+/* Add this to your CSS */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease-out;
+}

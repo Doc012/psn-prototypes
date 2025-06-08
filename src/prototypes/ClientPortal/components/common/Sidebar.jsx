@@ -21,7 +21,8 @@ import {
   HiOutlineOfficeBuilding,
   HiOutlineBriefcase,
   HiOutlineCash,
-  HiOutlineLogout, // Add this import
+  HiOutlineLogout,
+  HiOutlineBell, // Add this import for notifications icon
 } from 'react-icons/hi';
 
 const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
@@ -74,6 +75,7 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
       { id: 'client-documents', name: 'Documents', href: '/client-portal/documents', icon: HiOutlineDocumentDuplicate },
       { id: 'client-calendar', name: 'Calendar', href: '/client-portal/calendar', icon: HiOutlineCalendar },
       { id: 'client-invoices', name: 'Invoices', href: '/client-portal/invoices', icon: HiOutlineClipboardCheck },
+      { id: 'client-notifications', name: 'Notifications', href: '/client-portal/notifications', icon: HiOutlineBell },
       { id: 'client-profile', name: 'Profile', href: '/client-portal/profile', icon: HiOutlineUser },
       { id: 'client-support', name: 'Support', href: '/client-portal/support', icon: HiOutlineQuestionMarkCircle },
     ];
@@ -197,13 +199,6 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
                 </span>
               </motion.div>
             )}
-            {/* <Link
-              to="/client-portal/profile"
-              className={`flex items-center justify-center p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-300`}
-              title="Settings"
-            >
-              <HiOutlineCog className="h-5 w-5" />
-            </Link> */}
           </div>
           {/* Logout button */}
           <div className="mt-4">

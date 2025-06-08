@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { format, parseISO, isPast, addDays } from 'date-fns';
 import { 
@@ -21,11 +21,16 @@ import {
   HiOutlineInformationCircle,
   HiOutlineArrowSmRight,
   HiChevronRight,
-  HiOutlineEye
+  HiOutlineEye,
+  HiOutlinePencil,
+  HiOutlineTrash,
+  HiOutlineDownload,
+  HiPlus
 } from 'react-icons/hi';
 
 const ClientDashboardPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [cases, setCases] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
@@ -35,14 +40,13 @@ const ClientDashboardPage = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [caseProgress, setCaseProgress] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showViewEventModal, setShowViewEventModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   
   // Fetch client data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // In a real app, these would be API calls
-        // For now, use mock data
-        
         // Sample data - in a real app, this would come from API calls
         const mockCases = [
           { 
@@ -93,7 +97,14 @@ const ClientDashboardPage = () => {
             location: 'Zoom Video Conference',
             caseId: 1,
             caseName: 'Smith v. Johnson',
-            participants: ['Sarah Johnson', 'You']
+            participants: ['Sarah Johnson', 'You'],
+            description: 'Review current case status and discuss settlement options',
+            meetingLink: 'https://zoom.us/j/123456789',
+            canEdit: true,
+            canDelete: true,
+            documents: [
+              { id: 1, name: 'Meeting Agenda.pdf', size: '245 KB' }
+            ]
           },
           { 
             id: 2, 
@@ -103,7 +114,12 @@ const ClientDashboardPage = () => {
             type: 'Deadline',
             caseId: 2,
             caseName: 'Estate of Williams',
-            description: 'Submit all financial records for the estate'
+            description: 'Submit all financial records for the estate',
+            canEdit: false,
+            canDelete: false,
+            documents: [
+              { id: 2, name: 'Required Documents Checklist.pdf', size: '320 KB' }
+            ]
           },
           { 
             id: 3, 
@@ -114,7 +130,14 @@ const ClientDashboardPage = () => {
             location: 'County Courthouse, Room 302',
             caseId: 1,
             caseName: 'Smith v. Johnson',
-            description: 'Motion hearing for discovery issues'
+            description: 'Motion hearing for discovery issues',
+            canEdit: false,
+            canDelete: false,
+            participants: ['Judge Wilson', 'Sarah Johnson', 'You', 'Opposing Counsel'],
+            documents: [
+              { id: 3, name: 'Court Notice.pdf', size: '180 KB' },
+              { id: 4, name: 'Motion Documents.pdf', size: '2.1 MB' }
+            ]
           },
           { 
             id: 4, 
@@ -125,10 +148,19 @@ const ClientDashboardPage = () => {
             location: 'Phone Call',
             caseId: 3,
             caseName: 'Brown LLC Contract',
-            participants: ['Sarah Johnson', 'You', 'Brown LLC Representative']
+            participants: ['Sarah Johnson', 'You', 'Brown LLC Representative'],
+            description: 'Review contract terms and discuss negotiations',
+            canEdit: true,
+            canDelete: true,
+            phoneNumber: '+27 21 555 0123',
+            documents: [
+              { id: 5, name: 'Draft Contract v2.pdf', size: '1.8 MB' },
+              { id: 6, name: 'Term Sheet.pdf', size: '450 KB' }
+            ]
           },
         ];
         
+        // Updated notifications with actionable data
         const mockNotifications = [
           { 
             id: 1, 
@@ -137,7 +169,9 @@ const ClientDashboardPage = () => {
             read: false,
             type: 'document',
             caseId: 1,
-            link: '/client-portal/documents/45'
+            link: '/client-portal/documents/45',
+            actionable: true,
+            actionText: 'Review Document'
           },
           { 
             id: 2, 
@@ -146,7 +180,9 @@ const ClientDashboardPage = () => {
             read: false,
             type: 'note',
             caseId: 1,
-            link: '/client-portal/cases/1'
+            link: '/client-portal/cases/1',
+            actionable: true,
+            actionText: 'View Note'
           },
           { 
             id: 3, 
@@ -155,7 +191,9 @@ const ClientDashboardPage = () => {
             read: true,
             type: 'reminder',
             caseId: 1,
-            link: '/client-portal/calendar'
+            link: '/client-portal/calendar',
+            actionable: true,
+            actionText: 'View Calendar'
           },
           { 
             id: 4, 
@@ -164,7 +202,9 @@ const ClientDashboardPage = () => {
             read: true,
             type: 'invoice',
             caseId: 1,
-            link: '/client-portal/invoices/1'
+            link: '/client-portal/invoices/1',
+            actionable: true,
+            actionText: 'Pay Invoice'
           },
         ];
         
@@ -249,7 +289,7 @@ const ClientDashboardPage = () => {
           status: c.status
         }));
         
-        // Generate recent activity
+        // Updated activity records with actionable links
         const mockRecentActivity = [
           {
             id: 1,
@@ -260,7 +300,10 @@ const ClientDashboardPage = () => {
             userRole: 'Attorney',
             caseId: 1,
             caseName: 'Smith v. Johnson',
-            link: '/client-portal/documents/1'
+            link: '/client-portal/documents/1',
+            documentId: 1,
+            canDownload: true,
+            canComment: true
           },
           {
             id: 2,
@@ -271,7 +314,9 @@ const ClientDashboardPage = () => {
             userRole: 'Attorney',
             caseId: 1,
             caseName: 'Smith v. Johnson',
-            link: '/client-portal/cases/1'
+            link: '/client-portal/cases/1',
+            noteId: 5,
+            canReply: true
           },
           {
             id: 3,
@@ -282,7 +327,9 @@ const ClientDashboardPage = () => {
             userRole: 'System',
             caseId: 1,
             caseName: 'Smith v. Johnson',
-            link: '/client-portal/cases/1'
+            link: '/client-portal/cases/1',
+            previousStatus: 'Pending',
+            newStatus: 'Active'
           },
           {
             id: 4,
@@ -293,7 +340,10 @@ const ClientDashboardPage = () => {
             userRole: 'Finance',
             caseId: 2,
             caseName: 'Estate of Williams',
-            link: '/client-portal/invoices/2'
+            link: '/client-portal/invoices/2',
+            invoiceId: 2,
+            receiptAvailable: true,
+            receiptLink: '/client-portal/invoices'
           },
           {
             id: 5,
@@ -304,7 +354,10 @@ const ClientDashboardPage = () => {
             userRole: 'Client',
             caseId: 1,
             caseName: 'Smith v. Johnson',
-            link: '/client-portal/documents/2'
+            link: '/client-portal/documents/2',
+            documentId: 2,
+            canDownload: true,
+            canDelete: true
           }
         ];
         
@@ -325,6 +378,59 @@ const ClientDashboardPage = () => {
     
     fetchData();
   }, []);
+
+  // Handle event view
+  const handleViewEvent = (event) => {
+    setSelectedEvent(event);
+    setShowViewEventModal(true);
+  };
+
+  // Handle event edit
+  const handleEditEvent = (eventId) => {
+    navigate(`/client-portal/calendar`);
+  };
+
+  // Handle event deletion
+  const handleDeleteEvent = (eventId) => {
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      // In a real app, this would be an API call
+      setUpcomingEvents(upcomingEvents.filter(event => event.id !== eventId));
+      if (showViewEventModal) {
+        setShowViewEventModal(false);
+      }
+    }
+  };
+
+  // Handle document download
+  const handleDocumentDownload = (documentId) => {
+    // In a real app, this would trigger a file download
+    alert(`Downloading document ${documentId}`);
+  };
+
+  // Handle creating a new event
+  const handleCreateEvent = () => {
+    navigate('/client-portal/calendar');
+  };
+
+  // Handle activity actions
+  const handleActivityAction = (activity) => {
+    if (activity.type === 'document' && activity.canDownload) {
+      handleDocumentDownload(activity.documentId);
+    } else if (activity.type === 'payment' && activity.receiptAvailable) {
+      window.open(activity.receiptLink, '_blank');
+    } else {
+      navigate(activity.link);
+    }
+  };
+
+  // Mark notification as read
+  const markNotificationRead = (id) => {
+    setNotifications(prevNotifications => 
+      prevNotifications.map(notification => 
+        notification.id === id ? { ...notification, read: true } : notification
+      )
+    );
+  };
   
   // Helper functions
   const getStatusColor = (status) => {
@@ -463,14 +569,24 @@ const ClientDashboardPage = () => {
               </p>
             </div>
             <div className="mt-4 md:mt-0">
-              <div className="inline-flex items-center px-4 py-2 bg-[#800000] bg-opacity-10 rounded-md">
-                <HiOutlineInformationCircle className="h-5 w-5 text-[#800000] mr-2" />
-                <span className="text-sm text-[#800000] font-medium">
-                  {notifications.filter(n => !n.read).length > 0 
-                    ? `You have ${notifications.filter(n => !n.read).length} unread notification${notifications.filter(n => !n.read).length !== 1 ? 's' : ''}`
-                    : 'You\'re all caught up!'}
-                </span>
-              </div>
+              {notifications.filter(n => !n.read).length > 0 ? (
+                <button 
+                  onClick={() => navigate('/client-portal/notifications')}
+                  className="inline-flex items-center px-4 py-2 bg-[#800000] bg-opacity-10 rounded-md hover:bg-opacity-20 transition-colors"
+                >
+                  <HiOutlineBell className="h-5 w-5 text-[#800000] mr-2" />
+                  <span className="text-sm text-[#800000] font-medium">
+                    You have {notifications.filter(n => !n.read).length} unread notification{notifications.filter(n => !n.read).length !== 1 ? 's' : ''}
+                  </span>
+                </button>
+              ) : (
+                <div className="inline-flex items-center px-4 py-2 bg-green-50 rounded-md">
+                  <HiOutlineCheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                  <span className="text-sm text-green-700 font-medium">
+                    You're all caught up!
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -576,10 +692,13 @@ const ClientDashboardPage = () => {
                   </div>
                   <div className="bg-gray-50 px-5 py-3">
                     <div className="text-sm">
-                      <Link to="/client-portal/calendar" className="font-medium text-[#800000] hover:text-[#600000] flex items-center justify-between">
+                      <button 
+                        onClick={() => setActiveTab('calendar')}
+                        className="font-medium text-[#800000] hover:text-[#600000] flex items-center justify-between w-full"
+                      >
                         View calendar
                         <HiChevronRight className="h-5 w-5" />
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -682,6 +801,14 @@ const ClientDashboardPage = () => {
                                   style={{ width: `${item.progress}%` }}
                                 ></div>
                               </div>
+                              <div className="mt-2 text-right">
+                                <Link 
+                                  to={`/client-portal/cases/${item.id}`} 
+                                  className="text-sm font-medium text-[#800000] hover:text-[#600000]"
+                                >
+                                  View details
+                                </Link>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -703,9 +830,8 @@ const ClientDashboardPage = () => {
                     </div>
                     <div className="divide-y divide-gray-200">
                       {notifications.slice(0, 3).map((notification) => (
-                        <Link 
+                        <div 
                           key={notification.id} 
-                          to={notification.link}
                           className={`block px-6 py-4 hover:bg-gray-50 ${!notification.read ? 'bg-blue-50 hover:bg-blue-50' : ''}`}
                         >
                           <div className="flex items-start">
@@ -726,9 +852,21 @@ const ClientDashboardPage = () => {
                               <p className="mt-1 text-xs text-gray-500">
                                 {formatDate(notification.date)}
                               </p>
+                              <div className="mt-2 flex">
+                                <button
+                                  onClick={() => {
+                                    markNotificationRead(notification.id);
+                                    navigate(notification.link);
+                                  }}
+                                  className="text-sm font-medium text-[#800000] hover:text-[#600000] flex items-center"
+                                >
+                                  {notification.actionable ? notification.actionText : 'View Details'}
+                                  <HiOutlineArrowSmRight className="ml-1 h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </Link>
+                        </div>
                       ))}
                       {notifications.length === 0 && (
                         <div className="px-6 py-4 text-center">
@@ -744,9 +882,12 @@ const ClientDashboardPage = () => {
                   <div className="bg-white shadow rounded-lg">
                     <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
                       <h3 className="text-lg font-medium text-gray-900">Upcoming Events</h3>
-                      <Link to="/client-portal/calendar" className="text-sm font-medium text-[#800000] hover:text-[#600000]">
+                      <button 
+                        onClick={() => setActiveTab('calendar')}
+                        className="text-sm font-medium text-[#800000] hover:text-[#600000]"
+                      >
                         View calendar
-                      </Link>
+                      </button>
                     </div>
                     <div className="p-6 space-y-6">
                       {upcomingEvents.filter(e => isUpcoming(e.date)).slice(0, 3).map((event) => (
@@ -770,12 +911,13 @@ const ClientDashboardPage = () => {
                               </p>
                             )}
                             <div className="mt-3">
-                              <Link 
-                                to={`/client-portal/calendar/${event.id}`}
-                                className="text-xs font-medium text-[#800000] hover:text-[#600000]"
+                              <button
+                                onClick={() => handleViewEvent(event)}
+                                className="text-xs font-medium text-[#800000] hover:text-[#600000] flex items-center"
                               >
                                 View details
-                              </Link>
+                                <HiOutlineArrowSmRight className="ml-1 h-4 w-4" />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -805,20 +947,20 @@ const ClientDashboardPage = () => {
                       </Link>
                       
                       <Link 
-                        to="/client-portal/messages/new" 
+                        to="/client-portal/messages" 
                         className="text-center py-4 px-2 rounded-lg bg-[#800000] bg-opacity-5 hover:bg-opacity-10 transition-colors duration-200 flex flex-col items-center"
                       >
                         <HiOutlineChatAlt className="h-8 w-8 text-[#800000]" />
                         <span className="mt-2 text-sm font-medium text-[#800000]">New Message</span>
                       </Link>
                       
-                      <Link 
-                        to="/client-portal/calendar/new" 
+                      <button
+                        onClick={handleCreateEvent}
                         className="text-center py-4 px-2 rounded-lg bg-[#800000] bg-opacity-5 hover:bg-opacity-10 transition-colors duration-200 flex flex-col items-center"
                       >
                         <HiOutlineCalendar className="h-8 w-8 text-[#800000]" />
                         <span className="mt-2 text-sm font-medium text-[#800000]">Schedule Meeting</span>
-                      </Link>
+                      </button>
                       
                       <Link 
                         to="/client-portal/support" 
@@ -947,9 +1089,13 @@ const ClientDashboardPage = () => {
                   <div className="bg-white shadow overflow-hidden sm:rounded-lg">
                     <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
                       <h3 className="text-lg font-medium text-gray-900">Upcoming Events</h3>
-                      <Link to="/client-portal/calendar/new" className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000]">
-                        Add Event
-                      </Link>
+                      <button 
+                        onClick={handleCreateEvent}
+                        className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000]"
+                      >
+                        <HiPlus className="mr-2 h-5 w-5" />
+                        Schedule New Meeting
+                      </button>
                     </div>
                     <div className="divide-y divide-gray-200">
                       {upcomingEvents.filter(e => isUpcoming(e.date)).length > 0 ? (
@@ -979,13 +1125,34 @@ const ClientDashboardPage = () => {
                                     </p>
                                   )}
                                 </div>
-                                <div className="flex">
-                                  <Link 
-                                    to={`/client-portal/calendar/${event.id}`}
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleViewEvent(event)}
                                     className="text-[#800000] hover:text-[#600000]"
+                                    title="View details"
                                   >
                                     <HiOutlineEye className="h-5 w-5" />
-                                  </Link>
+                                  </button>
+
+                                  {event.canEdit && (
+                                    <button
+                                      onClick={() => handleEditEvent(event.id)}
+                                      className="text-blue-600 hover:text-blue-800"
+                                      title="Edit event"
+                                    >
+                                      <HiOutlinePencil className="h-5 w-5" />
+                                    </button>
+                                  )}
+
+                                  {event.canDelete && (
+                                    <button
+                                      onClick={() => handleDeleteEvent(event.id)}
+                                      className="text-red-600 hover:text-red-800"
+                                      title="Delete event"
+                                    >
+                                      <HiOutlineTrash className="h-5 w-5" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -997,12 +1164,12 @@ const ClientDashboardPage = () => {
                           <h3 className="mt-2 text-sm font-medium text-gray-900">No upcoming events</h3>
                           <p className="mt-1 text-sm text-gray-500">You have no scheduled events coming up.</p>
                           <div className="mt-6">
-                            <Link 
-                              to="/client-portal/calendar/new"
+                            <button
+                              onClick={handleCreateEvent}
                               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000]"
                             >
                               Schedule an event
-                            </Link>
+                            </button>
                           </div>
                         </div>
                       )}
@@ -1067,6 +1234,31 @@ const ClientDashboardPage = () => {
                       </div>
                     </div>
                   </div>
+
+                  <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
+                    <div className="px-6 py-5 border-b border-gray-200">
+                      <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+                    </div>
+                    <div className="p-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        <button
+                          onClick={handleCreateEvent}
+                          className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000]"
+                        >
+                          <HiPlus className="mr-2 h-5 w-5" />
+                          Schedule New Meeting
+                        </button>
+                        
+                        <Link
+                          to="/client-portal/calendar"
+                          className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
+                        >
+                          <HiOutlineBell className="mr-2 h-5 w-5 text-gray-500" />
+                          Manage Reminders
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1076,8 +1268,20 @@ const ClientDashboardPage = () => {
           {activeTab === 'activity' && (
             <div>
               <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                <div className="px-6 py-5 border-b border-gray-200">
+                <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
                   <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
+                  <div className="flex items-center space-x-2">
+                    <select 
+                      className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-[#800000] focus:border-[#800000]"
+                      defaultValue="all"
+                    >
+                      <option value="all">All Activity</option>
+                      <option value="document">Documents</option>
+                      <option value="note">Notes</option>
+                      <option value="payment">Payments</option>
+                      <option value="status">Status Changes</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="px-6 py-4">
                   <div className="flow-root">
@@ -1110,18 +1314,28 @@ const ClientDashboardPage = () => {
                                   <p>{activity.description}</p>
                                 </div>
                                 <div className="mt-2">
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
                                     {activity.caseName}
                                   </span>
                                 </div>
-                                <div className="mt-2">
-                                  <Link 
-                                    to={activity.link}
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  <button
+                                    onClick={() => handleActivityAction(activity)}
                                     className="text-sm font-medium text-[#800000] hover:text-[#600000] flex items-center"
                                   >
-                                    View details
+                                    {activity.type === 'document' && activity.canDownload ? 'Download Document' : 'View Details'}
                                     <HiOutlineArrowSmRight className="ml-1 h-4 w-4" />
-                                  </Link>
+                                  </button>
+
+                                  {activity.type === 'payment' && activity.receiptAvailable && (
+                                    <button
+                                      onClick={() => window.open(activity.receiptLink, '_blank')}
+                                      className="text-sm font-medium text-green-600 hover:text-green-800 flex items-center"
+                                    >
+                                      View Receipt
+                                      <HiOutlineDownload className="ml-1 h-4 w-4" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Link } from 'react-router-dom';
-import { Dialog, Transition, Popover } from '@headlessui/react';
+import { Dialog, Transition } from '@headlessui/react';
 import { useAuth } from '../../../context/AuthContext';
 import { 
   HiOutlineCalendar, 
@@ -27,9 +27,50 @@ import {
   HiOutlineOfficeBuilding,
   HiOutlineMailOpen,
   HiOutlineInformationCircle,
-  HiOutlineStar
+  HiOutlineStar,
+  HiStar
 } from 'react-icons/hi';
 import { format, addDays, subDays, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isSameMonth, parseISO } from 'date-fns';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Calendar component error:", error, errorInfo);
+  }
+
+  handleTryAgain = () => {
+    this.setState({ hasError: false });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 bg-white rounded-lg shadow">
+          <h2 className="text-lg font-medium text-red-600">Something went wrong</h2>
+          <p className="mt-2 text-sm text-gray-500">
+            There was an error loading the calendar. Please try refreshing the page.
+          </p>
+          <button
+            className="mt-4 px-4 py-2 bg-[#800000] text-white rounded hover:bg-[#600000]"
+            onClick={this.handleTryAgain}
+          >
+            Try again
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const ClientCalendarPage = () => {
   const { user } = useAuth();
@@ -55,7 +96,12 @@ const ClientCalendarPage = () => {
     isVirtual: false,
     meetingLink: '',
     isImportant: false,
-    notifyBefore: '30'
+    notifyBefore: '30',
+    preferredAttorney: '', // New field
+    contactMethod: 'email', // New field: 'email', 'phone'
+    urgency: 'normal', // New field: 'urgent', 'normal', 'flexible'
+    notes: '', // Client-specific notes for the request
+    status: 'pending' // Initial status
   });
   const [cases, setCases] = useState([]);
   const [calendarFilters, setCalendarFilters] = useState({
@@ -64,8 +110,17 @@ const ClientCalendarPage = () => {
     timeframe: 'upcoming'
   });
   const [showTooltipId, setShowTooltipId] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [selectedReminder, setSelectedReminder] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [confirmationData, setConfirmationData] = useState({
+    show: false,
+    eventId: null,
+    title: '',
+    date: '',
+    time: ''
+  });
 
   // Get current year and month for realistic data
   const currentYear = new Date().getFullYear();
@@ -306,6 +361,20 @@ const ClientCalendarPage = () => {
     }));
   }, []);
 
+  // Add this inside your useEffect for initial setup
+  useEffect(() => {
+    // Add event listener to handle closing tooltips when clicking elsewhere
+    const handleClickOutside = () => {
+      setShowTooltipId(null);
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   // Generate the days for the current month view
   const generateMonthDays = () => {
     const year = currentDate.getFullYear();
@@ -485,10 +554,36 @@ const ClientCalendarPage = () => {
     }
   };
 
-  // Handle event click
-  const handleEventClick = (event) => {
-    setSelectedEvent(event);
-    setIsEventDetailsOpen(true);
+  // Update your handleEventClick function with this improved version
+  const handleEventClick = (event, e) => {
+    // If event is not properly defined, return early
+    if (!event || typeof event !== 'object') {
+      console.error('Invalid event object:', event);
+      return;
+    }
+    
+    try {
+      // Close any open tooltips
+      setShowTooltipId(null);
+      
+      // Create a clean copy of the event with properly formatted dates
+      const eventCopy = {
+        ...event,
+        // Ensure dates are proper Date objects by creating new instances
+        start: new Date(event.start),
+        end: new Date(event.end)
+      };
+      
+      // Set the selected event with our clean copy
+      setSelectedEvent(eventCopy);
+      
+      // Open the modal
+      setIsEventDetailsOpen(true);
+    } catch (error) {
+      console.error('Error processing event click:', error);
+      // Show error toast instead of crashing
+      showToast('There was an error opening event details', 'error');
+    }
   };
 
   // Get color for event type
@@ -595,34 +690,40 @@ const ClientCalendarPage = () => {
     e.preventDefault();
     
     // Create start and end dates from form data
-    const start = newEvent.isAllDay 
-      ? new Date(newEvent.startDate)
-      : new Date(`${newEvent.startDate}T${newEvent.startTime}`);
+    const start = new Date(`${newEvent.startDate}T${newEvent.startTime}`);
     
-    const end = newEvent.isAllDay
-      ? new Date(newEvent.endDate)
-      : new Date(`${newEvent.endDate}T${newEvent.endTime}`);
+    // Set end time 1 hour after start time if not specified
+    let end = new Date(start);
+    end.setHours(end.getHours() + 1);
+    
+    // Generate a unique ID
+    const eventId = Date.now();
     
     // Create new event object
     const eventToAdd = {
-      id: Date.now(), // Use timestamp as temporary ID
+      id: eventId,
       title: newEvent.title,
       start,
       end,
       type: newEvent.type,
-      location: newEvent.location,
+      location: newEvent.isVirtual ? 'Virtual Meeting' : 'Law Office - Main Conference Room',
       description: newEvent.description,
       attendees: [
-        { id: 123, name: user?.firstName ? `${user.firstName} ${user.lastName}` : 'John Doe', role: 'client' }
+        { id: 123, name: user?.firstName ? `${user.firstName} ${user.lastName}` : 'John Doe', role: 'client' },
+        { id: 456, name: newEvent.preferredAttorney || 'To be assigned', role: 'attorney' }
       ],
       relatedCase: newEvent.relatedCase,
       caseId: cases.find(c => c.title === newEvent.relatedCase)?.id || null,
-      isAllDay: newEvent.isAllDay,
+      isAllDay: false,
       isVirtual: newEvent.isVirtual,
-      meetingLink: newEvent.meetingLink,
-      isImportant: newEvent.isImportant,
+      isImportant: newEvent.urgency === 'urgent',
       status: 'pending',
-      documents: []
+      requestDetails: {
+        urgency: newEvent.urgency,
+        alternateDate: newEvent.alternateDate,
+        preferredAttorney: newEvent.preferredAttorney,
+        requestedOn: new Date()
+      }
     };
     
     // Add to events array
@@ -631,8 +732,21 @@ const ClientCalendarPage = () => {
     // Close modal
     setIsAddEventOpen(false);
     
-    // Show success confirmation
-    alert("Event request submitted. Your legal team will confirm the appointment.");
+    // Show success notification
+    showToast(
+      "Appointment request submitted successfully",
+      "success",
+      5000
+    );
+    
+    // Show a confirmation/next steps dialog
+    setConfirmationData({
+      show: true,
+      eventId: eventId,
+      title: newEvent.title,
+      date: format(start, 'EEEE, MMMM d, yyyy'),
+      time: format(start, 'h:mm a')
+    });
   };
 
   // Toggle event type filter
@@ -739,6 +853,81 @@ const ClientCalendarPage = () => {
     setIsReminderModalOpen(true);
   };
 
+  // Add this function to your component above the return statement
+  // This formats and filters events for the list view
+  const getListViewEvents = () => {
+    // Filter events based on current filters
+    const filteredEvents = events.filter(event => {
+      const typeMatches = calendarFilters.eventTypes.includes(event.type);
+      const caseMatches = calendarFilters.cases === 'all' || event.relatedCase === calendarFilters.cases;
+      
+      // Apply timeframe filter
+      let timeframeMatches = true;
+      if (calendarFilters.timeframe === 'upcoming') {
+        timeframeMatches = new Date(event.start) >= new Date(new Date().setHours(0, 0, 0, 0));
+      } else if (calendarFilters.timeframe === 'past') {
+        timeframeMatches = new Date(event.start) < new Date(new Date().setHours(0, 0, 0, 0));
+      }
+      
+      return typeMatches && caseMatches && timeframeMatches;
+    });
+    
+    // Sort events by date
+    filteredEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+    
+    // Group events by date
+    const groupedEvents = {};
+    
+    filteredEvents.forEach(event => {
+      const dateKey = format(new Date(event.start), 'yyyy-MM-dd');
+      if (!groupedEvents[dateKey]) {
+        groupedEvents[dateKey] = [];
+      }
+      groupedEvents[dateKey].push(event);
+    });
+    
+    return groupedEvents;
+  };
+
+  // Add this state for favoriting events
+  const [favoritedEvents, setFavoritedEvents] = useState([]);
+
+  // Add this function for toggling event favorites
+  const toggleEventFavorite = (eventId, e) => {
+    // Stop event propagation to prevent opening the event details when clicking the star
+    if (e) e.stopPropagation();
+    
+    // Update events array to toggle the favorite status
+    setEvents(prevEvents => 
+      prevEvents.map(event => 
+        event.id === eventId 
+          ? { ...event, isFavorite: !event.isFavorite } 
+          : event
+      )
+    );
+    
+    // Find the event to get its title
+    const event = events.find(e => e.id === eventId);
+    
+    // Show feedback toast
+    showToast(
+      event?.isFavorite 
+        ? `Removed "${event.title}" from favorites` 
+        : `Added "${event.title}" to favorites`,
+      'success'
+    );
+  };
+
+  // Add toast helper function
+  const showToast = (text, type = 'info', duration = 3000) => {
+    setToastMessage({ text, type });
+    
+    // Automatically clear toast after duration
+    setTimeout(() => {
+      setToastMessage(null);
+    }, duration);
+  };
+
   if (loading) {
     return (
       <div className="py-6">
@@ -832,6 +1021,142 @@ const ClientCalendarPage = () => {
                   <div className="text-center py-6">
                     <HiOutlineBell className="mx-auto h-10 w-10 text-gray-300" />
                     <p className="mt-2 text-sm text-gray-500">No upcoming deadlines</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Add this after the Upcoming Deadlines section in the sidebar */}
+            <div className="bg-white shadow rounded-lg mb-6">
+              <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                  <HiStar className="mr-2 h-5 w-5 text-yellow-500" />
+                  Favorite Events
+                </h2>
+              </div>
+              <div className="p-4">
+                {events.filter(event => event.isFavorite).length > 0 ? (
+                  <ul className="space-y-3">
+                    {events
+                      .filter(event => event.isFavorite)
+                      .sort((a, b) => new Date(a.start) - new Date(b.start))
+                      .slice(0, 3) // Show only 3 most recent favorites
+                      .map(event => (
+                        <li 
+                          key={event.id} 
+                          className="relative rounded-md border border-gray-200 p-3 hover:shadow-md cursor-pointer transition-shadow"
+                          onClick={() => handleEventClick(event)}
+                        >
+                          <div className="flex items-start">
+                            <div className={`p-2 rounded-md mr-3 ${getEventTypeColor(event.type)}`}>
+                              {getEventTypeIcon(event.type)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {event.title}
+                              </p>
+                              <div className="mt-1">
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <HiOutlineCalendar className="mr-1 h-3 w-3" />
+                                  <span className="mr-1 font-medium">{formatRelativeDate(event.start)}</span>
+                                  {!event.isAllDay && (
+                                    <span>at {formatEventTime(event.start)}</span>
+                                  )}
+                                </div>
+                                {event.relatedCase && (
+                                  <div className="mt-1 flex items-center text-xs text-gray-500">
+                                    <HiOutlineOfficeBuilding className="mr-1 h-3 w-3" />
+                                    <span className="truncate">{event.relatedCase}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => toggleEventFavorite(event.id, e)}
+                              className="absolute top-2 right-2 text-yellow-500 hover:text-yellow-600"
+                              aria-label="Remove from favorites"
+                              title="Remove from favorites"
+                            >
+                              <HiStar className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                  </ul>
+                ) : (
+                  <div className="text-center py-6">
+                    <HiOutlineStar className="mx-auto h-10 w-10 text-gray-300" />
+                    <p className="mt-2 text-sm text-gray-500">No favorite events yet</p>
+                    <p className="text-xs text-gray-400">Star an event to add it here</p>
+                  </div>
+                )}
+                
+                {events.filter(event => event.isFavorite).length > 3 && (
+                  <div className="mt-3 text-center">
+                    <button 
+                      onClick={() => {
+                        setCalendarFilters(prev => ({...prev}));
+                        setViewMode('list');
+                      }}
+                      className="text-sm text-[#800000] hover:text-[#600000] hover:underline"
+                    >
+                      View all favorites
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Pending Requests section - add after Favorite Events */}
+            <div className="bg-white shadow rounded-lg mb-6">
+              <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                  <HiOutlineClock className="mr-2 h-5 w-5 text-blue-500" />
+                  Pending Requests
+                </h2>
+              </div>
+              <div className="p-4">
+                {events.filter(event => event.status === 'pending').length > 0 ? (
+                  <ul className="space-y-3">
+                    {events
+                      .filter(event => event.status === 'pending')
+                      .sort((a, b) => b.requestDetails?.requestedOn - a.requestDetails?.requestedOn)
+                      .slice(0, 2)
+                      .map(event => (
+                        <li 
+                          key={event.id} 
+                          className="relative rounded-md border border-gray-200 p-3 hover:shadow-md cursor-pointer transition-shadow"
+                          onClick={() => handleEventClick(event)}
+                        >
+                          <div className="flex items-start">
+                            <div className={`p-2 rounded-md mr-3 ${getEventTypeColor(event.type)}`}>
+                              {getEventTypeIcon(event.type)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {event.title}
+                              </p>
+                              <div className="mt-1">
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <HiOutlineCalendar className="mr-1 h-3 w-3" />
+                                  <span className="mr-1 font-medium">{formatRelativeDate(event.start)}</span>
+                                  <span>at {formatEventTime(event.start)}</span>
+                                </div>
+                                <div className="mt-1 flex items-center text-xs">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Awaiting confirmation
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                  </ul>
+                ) : (
+                  <div className="text-center py-6">
+                    <HiOutlineClock className="mx-auto h-10 w-10 text-gray-300" />
+                    <p className="mt-2 text-sm text-gray-500">No pending requests</p>
                   </div>
                 )}
               </div>
@@ -1055,11 +1380,22 @@ const ClientCalendarPage = () => {
                               <div
                                 key={event.id}
                                 className="relative"
-                                onMouseEnter={() => setShowTooltipId(event.id)}
-                                onMouseLeave={() => setShowTooltipId(null)}
+                                onMouseEnter={(e) => {
+                                  e.stopPropagation();
+                                  setShowTooltipId(event.id);
+                                  // Store the mouse position in state for positioning the tooltip
+                                  setTooltipPosition({ x: e.clientX, y: e.clientY });
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.stopPropagation();
+                                  setShowTooltipId(null);
+                                }}
                               >
                                 <button
-                                  onClick={() => handleEventClick(event)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEventClick(event, e);
+                                  }}
                                   className={`w-full text-left px-2 py-1 rounded text-xs font-medium truncate border-l-2 
                                     ${getEventBorderColor(event.type)} ${getEventBgColor(event.type, event.isImportant)}
                                     transition-colors duration-150 ease-in-out`}
@@ -1076,9 +1412,17 @@ const ClientCalendarPage = () => {
                                   </div>
                                 </button>
                                 
-                                {/* Event tooltip */}
+                                {/* Event tooltip - positioned fixed relative to viewport */}
                                 {showTooltipId === event.id && (
-                                  <div className="absolute z-10 left-0 mt-1 w-64 px-3 py-2 bg-white rounded-md shadow-lg border border-gray-200">
+                                  <div 
+                                    className="fixed z-50 w-64 px-3 py-2 bg-white rounded-md shadow-lg border border-gray-200 animate-fade-in event-tooltip"
+                                    style={{
+                                      // Use stored tooltip position instead of window.event
+                                      left: `${Math.min(window.innerWidth - 280, Math.max(20, tooltipPosition?.x || 0))}px`,
+                                      top: `${Math.min(window.innerHeight - 200, Math.max(20, tooltipPosition?.y || 0))}px`,
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
                                     <div className="flex justify-between items-start">
                                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getEventTypeColor(event.type)}`}>
                                         {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
@@ -1110,6 +1454,17 @@ const ClientCalendarPage = () => {
                                           {event.relatedCase}
                                         </div>
                                       )}
+                                    </div>
+                                    <div className="mt-2 flex justify-end">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEventClick(event);
+                                        }}
+                                        className="text-xs text-[#800000] hover:underline"
+                                      >
+                                        View details
+                                      </button>
                                     </div>
                                   </div>
                                 )}
@@ -1361,6 +1716,167 @@ const ClientCalendarPage = () => {
                   </div>
                 </div>
               )}
+
+              {/* List view calendar */}
+              {viewMode === 'list' && (
+                <div className="p-4 relative">
+                  <div className="space-y-8">
+                    {Object.keys(getListViewEvents()).length > 0 ? (
+                      Object.entries(getListViewEvents()).map(([dateKey, dayEvents]) => (
+                        <div key={dateKey} className="space-y-2">
+                          <h3 className="text-sm font-medium text-gray-500 sticky top-0 bg-white py-2 z-20 border-b border-gray-100">
+                            {format(parseISO(dateKey), 'EEEE, MMMM d, yyyy')}
+                            {isSameDay(parseISO(dateKey), new Date()) && (
+                              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Today
+                              </span>
+                            )}
+                          </h3>
+                          
+                          <div className="space-y-3 pl-4">
+                            {dayEvents.map(event => (
+                              <div 
+                                key={event.id}
+                                className="relative bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                              >
+                                <div className={`w-1 absolute top-0 bottom-0 left-0 ${
+                                  event.type === 'meeting' ? 'bg-blue-500' :
+                                  event.type === 'hearing' ? 'bg-purple-500' :
+                                  event.type === 'deadline' ? 'bg-red-500' :
+                                  'bg-yellow-500'
+                                }`}></div>
+                                
+                                <div className="p-4 pl-5">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                      <div className={`p-2 rounded-md mr-3 ${getEventTypeColor(event.type)}`}>
+                                        {getEventTypeIcon(event.type)}
+                                      </div>
+                                      <div>
+                                        <h4 className="text-sm font-medium text-gray-900 group flex items-center">
+                                          <span 
+                                            className="cursor-pointer hover:text-[#800000]"
+                                            onClick={(e) => handleEventClick(event, e)}
+                                          >
+                                            {event.title}
+                                          </span>
+                                          {event.isImportant && (
+                                            <HiOutlineExclamation className="ml-1 h-4 w-4 text-red-500" />
+                                          )}
+                                        </h4>
+                                        <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
+                                          <div className="flex items-center">
+                                            <HiOutlineClock className="mr-1 h-3 w-3" />
+                                            {event.isAllDay ? (
+                                              <span>All day</span>
+                                            ) : (
+                                              <span>{formatEventTime(event.start)} - {formatEventTime(event.end)}</span>
+                                            )}
+                                          </div>
+                                          {event.location && (
+                                            <div className="flex items-center">
+                                              <HiOutlineLocationMarker className="mr-1 h-3 w-3" />
+                                              <span className="truncate max-w-[150px]">{event.location}</span>
+                                            </div>
+                                          )}
+                                          {event.isVirtual && (
+                                            <div className="flex items-center">
+                                              <HiOutlineVideoCamera className="mr-1 h-3 w-3" />
+                                              <span>Virtual Meeting</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center space-x-2">
+                                      <button
+                                        onClick={(e) => toggleEventFavorite(event.id, e)}
+                                        className={`transition-colors p-1 rounded-full ${
+                                          event.isFavorite 
+                                            ? 'text-yellow-500 hover:text-yellow-600' 
+                                            : 'text-gray-400 hover:text-yellow-500'
+                                        }`}
+                                        aria-label={event.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                                        title={event.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                                      >
+                                        {event.isFavorite ? (
+                                          <HiStar className="h-5 w-5" />
+                                        ) : (
+                                          <HiOutlineStar className="h-5 w-5" />
+                                        )}
+                                      </button>
+                                      
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeStyle(event.status)}`}>
+                                        {event.status}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {event.relatedCase && (
+                                    <div className="mt-3 flex items-center text-xs text-gray-500">
+                                      <HiOutlineOfficeBuilding className="mr-1 h-3 w-3" />
+                                      <span>Related Case: {event.relatedCase}</span>
+                                    </div>
+                                  )}
+                                  
+                                  {event.description && (
+                                    <div className="mt-2 text-sm text-gray-600 line-clamp-2">
+                                      {event.description}
+                                    </div>
+                                  )}
+                                  
+                                  <div className="mt-3 flex justify-between items-center">
+                                    <div className="flex -space-x-1">
+                                      {event.attendees && event.attendees.length > 0 && event.attendees.slice(0, 3).map((attendee) => (
+                                        <div key={attendee.id} className="h-6 w-6 rounded-full bg-gray-200 border border-white flex items-center justify-center text-xs font-medium overflow-hidden" title={attendee.name}>
+                                          {attendee.avatar ? (
+                                            <img src={attendee.avatar} alt={attendee.name} className="h-full w-full object-cover" />
+                                          ) : (
+                                            attendee.name.charAt(0)
+                                          )}
+                                        </div>
+                                      ))}
+                                      {event.attendees && event.attendees.length > 3 && (
+                                     
+                                      <button
+                                        onClick={() => handleEventClick(event)}
+                                        className="inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                                      >
+                                        View Details
+                                      </button>
+                                      )}
+                                      </div>
+
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-12">
+                        <HiOutlineCalendar className="mx-auto h-12 w-12 text-gray-300" />
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">No events found</h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Try adjusting your filters or create a new event.
+                        </p>
+                        <div className="mt-6">
+                          <button
+                            type="button"
+                            onClick={handleAddEvent}
+                            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                          >
+                            <HiOutlinePlus className="-ml-1 mr-2 h-5 w-5" />
+                            Request Appointment
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1384,7 +1900,7 @@ const ClientCalendarPage = () => {
                   <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
                 </Transition.Child>
 
-                {/* This element is to trick the browser into centering the modal contents. */}
+                {/* This element is to trick the browser into centering the modal contents */}
                 <span className="inline-block h-screen align-middle" aria-hidden="true">
                   &#8203;
                 </span>
@@ -1406,10 +1922,10 @@ const ClientCalendarPage = () => {
                           className="text-lg font-medium leading-6 text-gray-900 flex justify-between items-center"
                         >
                           <div className="flex items-center">
-                            <div className={`p-2 rounded-md mr-3 ${getEventTypeColor(selectedEvent.type)}`}>
-                              {getEventTypeIcon(selectedEvent.type)}
+                            <div className={`p-2 rounded-md mr-3 ${getEventTypeColor(selectedEvent.type || 'meeting')}`}>
+                              {getEventTypeIcon(selectedEvent.type || 'meeting')}
                             </div>
-                            <span>{selectedEvent.title}</span>
+                            <span>{selectedEvent.title || 'Event Details'}</span>
                           </div>
                           <button
                             onClick={() => setIsEventDetailsOpen(false)}
@@ -1516,6 +2032,29 @@ const ClientCalendarPage = () => {
 
                         <div className="mt-6 flex justify-end space-x-3">
                           <button
+
+                            type="button"
+                            className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md ${
+                              selectedEvent?.isFavorite 
+                                ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100' 
+                                : 'text-gray-700 bg-white hover:bg-gray-50'
+                            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]`}
+                            onClick={(e) => toggleEventFavorite(selectedEvent?.id, e)}
+                          >
+                            {selectedEvent?.isFavorite ? (
+                              <>
+                                <HiStar className="-ml-1 mr-2 h-5 w-5 text-yellow-500" />
+                                Favorited
+                              </>
+                            ) : (
+                              <>
+                                <HiOutlineStar className="-ml-1 mr-2 h-5 w-5" />
+                                Add to Favorites
+                              </>
+                            )}
+                          </button>
+                          
+                          <button
                             type="button"
                             className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                             onClick={() => setIsEventDetailsOpen(false)}
@@ -1525,6 +2064,7 @@ const ClientCalendarPage = () => {
                         </div>
                       </>
                     )}
+
                   </div>
                 </Transition.Child>
               </div>
@@ -1570,7 +2110,7 @@ const ClientCalendarPage = () => {
                       as="h3"
                       className="text-lg font-medium leading-6 text-gray-900 flex justify-between items-center"
                     >
-                      <span>Add New Event</span>
+                      <span>Request an Appointment</span>
                       <button
                         onClick={() => setIsAddEventOpen(false)}
                         className="text-gray-400 hover:text-gray-500"
@@ -1578,12 +2118,19 @@ const ClientCalendarPage = () => {
                         <HiOutlineX className="h-6 w-6" />
                       </button>
                     </Dialog.Title>
-                    
+
+                    <div className="mt-2 mb-4 px-1 py-2 bg-blue-50 border-l-4 border-blue-400 text-sm text-blue-700">
+                      <p>
+                        <HiOutlineInformationCircle className="inline-block mr-1 h-4 w-4" />
+                        Your request will be reviewed by our team. We'll confirm the appointment via email once scheduled.
+                      </p>
+                    </div>
+
                     <form onSubmit={handleSubmitEvent} className="mt-4">
                       <div className="space-y-4">
                         <div>
                           <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                            Event Title *
+                            Appointment Purpose *
                           </label>
                           <input
                             type="text"
@@ -1593,12 +2140,13 @@ const ClientCalendarPage = () => {
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
                             value={newEvent.title}
                             onChange={handleInputChange}
+                            placeholder="Brief description of what you'd like to discuss"
                           />
                         </div>
                         
                         <div>
                           <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-                            Event Type
+                            Appointment Type
                           </label>
                           <select
                             id="type"
@@ -1607,170 +2155,150 @@ const ClientCalendarPage = () => {
                             value={newEvent.type}
                             onChange={handleInputChange}
                           >
-                            <option value="meeting">Meeting</option>
-                            <option value="hearing">Hearing</option>
-                            <option value="deadline">Deadline</option>
-                            <option value="reminder">Reminder</option>
+                            <option value="meeting">Consultation</option>
+                            <option value="hearing">Pre-Hearing Meeting</option>
+                            <option value="meeting">Document Review</option>
+                            <option value="meeting">Status Update</option>
                           </select>
                         </div>
                         
-                        <div className="flex items-center">
-                          <input
-                            id="isAllDay"
-                            name="isAllDay"
-                            type="checkbox"
-                            className="h-4 w-4 text-[#800000] focus:ring-[#800000] border-gray-300 rounded"
-                            checked={newEvent.isAllDay}
-                            onChange={handleInputChange}
-                          />
-                          <label htmlFor="isAllDay" className="ml-2 block text-sm text-gray-700">
-                            All-day event
+                        <div>
+                          <label htmlFor="urgency" className="block text-sm font-medium text-gray-700">
+                            Urgency Level
                           </label>
+                          <select
+                            id="urgency"
+                            name="urgency"
+                            className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
+                            value={newEvent.urgency}
+                            onChange={handleInputChange}
+                          >
+                            <option value="urgent">Urgent (within 24-48 hours)</option>
+                            <option value="normal">Normal (within the week)</option>
+                            <option value="flexible">Flexible (whenever convenient)</option>
+                          </select>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                              Start Date
-                            </label>
-                            <input
-                              type="date"
-                              name="startDate"
-                              id="startDate"
-                              required
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                              value={newEvent.startDate}
-                              onChange={handleInputChange}
-                            />
-                          </div>
+                        {/* Date preferences section */}
+                        <div className="border-t border-gray-200 pt-4 mt-4">
+                          <h4 className="text-sm font-medium text-gray-900 mb-3">Date & Time Preferences</h4>
                           
-                          {!newEvent.isAllDay && (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                                Preferred Date
+                              </label>
+                              <input
+                                type="date"
+                                name="startDate"
+                                id="startDate"
+                                required
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
+                                value={newEvent.startDate}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+                            
                             <div>
                               <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
-                                Start Time
+                                Preferred Time
                               </label>
                               <input
                                 type="time"
                                 name="startTime"
                                 id="startTime"
-                                required={!newEvent.isAllDay}
+                                required
                                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
                                 value={newEvent.startTime}
                                 onChange={handleInputChange}
                               />
                             </div>
-                          )}
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-                              End Date
-                            </label>
-                            <input
-                              type="date"
-                              name="endDate"
-                              id="endDate"
-                              required
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                              value={newEvent.endDate}
-                              onChange={handleInputChange}
-                            />
                           </div>
                           
-                          {!newEvent.isAllDay && (
-                            <div>
-                              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
-                                End Time
-                              </label>
-                              <input
-                                type="time"
-                                name="endTime"
-                                id="endTime"
-                                required={!newEvent.isAllDay}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                                value={newEvent.endTime}
-                                onChange={handleInputChange}
-                              />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <input
-                            id="isVirtual"
-                            name="isVirtual"
-                            type="checkbox"
-                            className="h-4 w-4 text-[#800000] focus:ring-[#800000] border-gray-300 rounded"
-                            checked={newEvent.isVirtual}
-                            onChange={handleInputChange}
-                          />
-                          <label htmlFor="isVirtual" className="ml-2 block text-sm text-gray-700">
-                            Virtual meeting
-                          </label>
-                        </div>
-                        
-                        {newEvent.isVirtual ? (
-                          <div>
-                            <label htmlFor="meetingLink" className="block text-sm font-medium text-gray-700">
-                              Meeting Link
-                            </label>
-                            <input
-                              type="url"
-                              name="meetingLink"
-                              id="meetingLink"
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                              placeholder="https://zoom.us/j/..."
-                              value={newEvent.meetingLink}
-                              onChange={handleInputChange}
-                            />
-                          </div>
-                        ) : (
-                          <div>
-                            <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                              Location
+                          <div className="mt-3">
+                            <label htmlFor="alternateDate" className="block text-sm font-medium text-gray-700">
+                              Alternate Date/Time (optional)
                             </label>
                             <input
                               type="text"
-                              name="location"
-                              id="location"
+                              name="alternateDate"
+                              id="alternateDate"
                               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                              placeholder="Office, Courthouse, etc."
-                              value={newEvent.location}
+                              placeholder="E.g., 'Any afternoon next week' or 'Tuesday/Thursday mornings'"
+                              value={newEvent.alternateDate || ''}
                               onChange={handleInputChange}
                             />
                           </div>
-                        )}
+                        </div>
                         
-                        <div>
-                          <label htmlFor="relatedCase" className="block text-sm font-medium text-gray-700">
-                            Related Case
-                          </label>
-                          <select
-                            id="relatedCase"
-                            name="relatedCase"
-                            className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                            value={newEvent.relatedCase}
-                            onChange={handleInputChange}
-                          >
-                            <option value="">None</option>
-                            {cases.map(caseItem => (
-                              <option key={caseItem.id} value={caseItem.title}>
-                                {caseItem.title}
-                              </option>
-                            ))}
-                          </select>
+                        {/* Meeting details section */}
+                        <div className="border-t border-gray-200 pt-4 mt-4">
+                          <h4 className="text-sm font-medium text-gray-900 mb-3">Meeting Details</h4>
+                          
+                          <div className="flex items-center mb-3">
+                            <input
+                              id="isVirtual"
+                              name="isVirtual"
+                              type="checkbox"
+                              className="h-4 w-4 text-[#800000] focus:ring-[#800000] border-gray-300 rounded"
+                              checked={newEvent.isVirtual}
+                              onChange={handleInputChange}
+                            />
+                            <label htmlFor="isVirtual" className="ml-2 block text-sm text-gray-700">
+                              I prefer a virtual meeting
+                            </label>
+                          </div>
+                          
+                          <div>
+                            <label htmlFor="relatedCase" className="block text-sm font-medium text-gray-700">
+                              Related Case
+                            </label>
+                            <select
+                              id="relatedCase"
+                              name="relatedCase"
+                              className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
+                              value={newEvent.relatedCase}
+                              onChange={handleInputChange}
+                            >
+                              <option value="">Select a case</option>
+                              {cases.map(caseItem => (
+                                <option key={caseItem.id} value={caseItem.title}>
+                                  {caseItem.title}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div className="mt-3">
+                            <label htmlFor="preferredAttorney" className="block text-sm font-medium text-gray-700">
+                              Preferred Attorney (if any)
+                            </label>
+                            <select
+                              id="preferredAttorney"
+                              name="preferredAttorney"
+                              className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
+                              value={newEvent.preferredAttorney || ''}
+                              onChange={handleInputChange}
+                            >
+                              <option value="">No preference</option>
+                              <option value="Sarah Nguyen">Sarah Nguyen</option>
+                              <option value="Michael Patel">Michael Patel</option>
+                              <option value="Jessica Taylor">Jessica Taylor</option>
+                              <option value="Robert Johnson">Robert Johnson</option>
+                            </select>
+                          </div>
                         </div>
                         
                         <div>
                           <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                            Description
+                            Additional Details
                           </label>
                           <textarea
                             id="description"
                             name="description"
                             rows={3}
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
+                            placeholder="Please share any additional information that would help us prepare for this appointment"
                             value={newEvent.description}
                             onChange={handleInputChange}
                           />
@@ -1789,7 +2317,7 @@ const ClientCalendarPage = () => {
                           type="submit"
                           className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                         >
-                          Save Event
+                          Submit Request
                         </button>
                       </div>
                     </form>
@@ -1798,445 +2326,183 @@ const ClientCalendarPage = () => {
               </div>
             </Dialog>
           </Transition>
+
+          {/* Confirmation Dialog */}
+          <Transition appear show={confirmationData.show} as={Fragment}>
+            <Dialog
+              as="div"
+              className="fixed inset-0 z-10 overflow-y-auto"
+              onClose={() => setConfirmationData({...confirmationData, show: false})}
+            >
+              <div className="min-h-screen px-4 text-center">
+                <Transition.Child
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0"
+                  enterTo="opacity-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100"
+                  leaveTo="opacity-0"
+                >
+                  <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+                </Transition.Child>
+
+                <span className="inline-block h-screen align-middle" aria-hidden="true">
+                  &#8203;
+                </span>
+
+                <Transition.Child
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0 scale-95"
+                  enterTo="opacity-100 scale-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100 scale-100"
+                  leaveTo="opacity-0 scale-95"
+                >
+                  <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                    <div className="text-center mb-5">
+                      <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                        <HiOutlineCheck className="h-6 w-6 text-green-600" />
+                      </div>
+                      <h3 className="mt-3 text-lg font-medium text-gray-900">Request Submitted!</h3>
+                      <p className="mt-2 text-sm text-gray-500">
+                        Your appointment request has been received by our team.
+                      </p>
+                    </div>
+
+                    <div className="mt-4 bg-gray-50 p-4 rounded-md">
+                      <h4 className="text-sm font-medium text-gray-900">Request Details</h4>
+                      <div className="mt-2 space-y-2 text-sm text-gray-700">
+                        <p><span className="font-medium">Purpose:</span> {confirmationData.title}</p>
+                        <p><span className="font-medium">Requested for:</span> {confirmationData.date} at {confirmationData.time}</p>
+                        <p><span className="font-medium">Status:</span> <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending confirmation</span></p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 border-t border-gray-200 pt-4">
+                      <h4 className="text-sm font-medium text-gray-900">What happens next?</h4>
+                      <ul className="mt-2 space-y-2 text-sm text-gray-500">
+                        <li className="flex items-start">
+                          <span className="flex-shrink-0 h-5 w-5 text-green-500 flex items-center justify-center mr-1.5">
+                            <HiOutlineCheck className="h-4 w-4" />
+                          </span>
+                          <span>Our team will review your request</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="flex-shrink-0 h-5 w-5 text-green-500 flex items-center justify-center mr-1.5">
+                            <HiOutlineCheck className="h-4 w-4" />
+                          </span>
+                          <span>You'll receive a confirmation email when approved</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="flex-shrink-0 h-5 w-5 text-green-500 flex items-center justify-center mr-1.5">
+                            <HiOutlineCheck className="h-4 w-4" />
+                          </span>
+                          <span>The appointment will appear in your calendar once confirmed</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="mt-6 flex justify-end">
+                      <button
+                        type="button"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                        onClick={() => setConfirmationData({...confirmationData, show: false})}
+                      >
+                        Got it
+                      </button>
+                    </div>
+                  </div>
+                </Transition.Child>
+              </div>
+            </Dialog>
+          </Transition>
         </div>
       </div>
 
-      {/* Event Details Modal */}
-      <Transition appear show={isEventDetailsOpen} as={Fragment}>
-        <Dialog
-          as="div"
-          className="fixed inset-0 z-10 overflow-y-auto"
-          onClose={() => setIsEventDetailsOpen(false)}
-        >
-          <div className="min-h-screen px-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0"
-              enterTo="opacity-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
-            >
-              <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
-            </Transition.Child>
-
-            {/* This element is to trick the browser into centering the modal contents. */}
-            <span className="inline-block h-screen align-middle" aria-hidden="true">
-              &#8203;
-            </span>
-
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-                {selectedEvent && (
-                  <>
-                    <Dialog.Title
-                      as="h3"
-                      className="text-lg font-medium leading-6 text-gray-900 flex justify-between items-center"
-                    >
-                      <div className="flex items-center">
-                        <div className={`p-2 rounded-md mr-3 ${getEventTypeColor(selectedEvent.type)}`}>
-                          {getEventTypeIcon(selectedEvent.type)}
-                        </div>
-                        <span>{selectedEvent.title}</span>
-                      </div>
-                      <button
-                        onClick={() => setIsEventDetailsOpen(false)}
-                        className="text-gray-400 hover:text-gray-500"
-                      >
-                        <HiOutlineX className="h-6 w-6" />
-                      </button>
-                    </Dialog.Title>
-                    
-                    <div className="mt-4">
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex items-center text-sm text-gray-500">
-                            <HiOutlineCalendar className="mr-2 h-5 w-5 text-gray-400" />
-                            <span>
-                              {format(selectedEvent.start, 'MMMM d, yyyy')}
-                              {selectedEvent.isAllDay 
-                                ? ' (All day)' 
-                                : ` · ${formatEventTime(selectedEvent.start)} - ${formatEventTime(selectedEvent.end)}`
-                              }
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {selectedEvent.location && (
-                          <div className="flex items-center text-sm text-gray-500">
-                            <HiOutlineLocationMarker className="mr-2 h-5 w-5 text-gray-400" />
-                            <span>{selectedEvent.location}</span>
-                          </div>
-                        )}
-                        
-                        {selectedEvent.isVirtual && selectedEvent.meetingLink && (
-                          <div className="flex items-start text-sm text-gray-500">
-                            <HiOutlineVideoCamera className="mr-2 h-5 w-5 text-gray-400 mt-0.5" />
-                            <div>
-                              <div>Virtual Meeting</div>
-                              <a 
-                                href={selectedEvent.meetingLink} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-[#800000] hover:underline"
-                              >
-                                {selectedEvent.meetingLink}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {selectedEvent.relatedCase && (
-                          <div className="flex items-center text-sm text-gray-500">
-                            <HiOutlineDocumentText className="mr-2 h-5 w-5 text-gray-400" />
-                            <span>Related Case: {selectedEvent.relatedCase}</span>
-                          </div>
-                        )}
-                        
-                        {selectedEvent.description && (
-                          <div className="mt-4">
-                            <h4 className="text-sm font-medium text-gray-900">Description</h4>
-                            <p className="mt-1 text-sm text-gray-500">
-                              {selectedEvent.description}
-                            </p>
-                          </div>
-                        )}
-                        
-                        {selectedEvent.attendees && selectedEvent.attendees.length > 0 && (
-                          <div className="mt-4">
-                            <h4 className="text-sm font-medium text-gray-900">Attendees</h4>
-                            <ul className="mt-2 space-y-2">
-                              {selectedEvent.attendees.map(attendee => (
-                                <li key={attendee.id} className="flex items-center text-sm">
-                                  <HiOutlineUser className="mr-2 h-5 w-5 text-gray-400" />
-                                  <span>
-                                    {attendee.name}
-                                    <span className="ml-1 text-xs text-gray-500">
-                                      ({attendee.role})
-                                    </span>
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        
-                        {selectedEvent.documents && selectedEvent.documents.length > 0 && (
-                          <div className="mt-4">
-                            <h4 className="text-sm font-medium text-gray-900">Related Documents</h4>
-                            <ul className="mt-2 space-y-2">
-                              {selectedEvent.documents.map(doc => (
-                                <li key={doc.id} className="flex items-center text-sm">
-                                  <HiOutlineDocumentText className="mr-2 h-5 w-5 text-gray-400" />
-                                  <a 
-                                    href="#" 
-                                    className="text-[#800000] hover:underline"
-                                  >
-                                    {doc.name}
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-6 flex justify-end space-x-3">
-                      <button
-                        type="button"
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                        onClick={() => setIsEventDetailsOpen(false)}
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </Transition.Child>
+      {/* Toast notification */}
+      {toastMessage && (
+        <div className={`fixed bottom-4 right-4 z-50 max-w-md bg-white rounded-lg shadow-lg border-l-4 ${
+          toastMessage.type === 'success' ? 'border-green-500' : 
+          toastMessage.type === 'error' ? 'border-red-500' : 
+          toastMessage.type === 'info' ? 'border-blue-500' : 'border-yellow-500'
+        } p-4 flex items-center animate-slide-up`}>
+          <div className={`flex-shrink-0 ${
+            toastMessage.type === 'success' ? 'text-green-500' : 
+            toastMessage.type === 'error' ? 'text-red-500' : 
+            toastMessage.type === 'info' ? 'text-blue-500' : 'text-yellow-500'
+          }`}>
+            {toastMessage.type === 'success' ? <HiOutlineCheck className="h-5 w-5" /> : 
+             toastMessage.type === 'error' ? <HiOutlineX className="h-5 w-5" /> :
+             toastMessage.type === 'info' ? <HiOutlineInformationCircle className="h-5 w-5" /> :
+             <HiOutlineExclamation className="h-5 w-5" />}
           </div>
-        </Dialog>
-      </Transition>
-
-      {/* Add Event Modal */}
-      <Transition appear show={isAddEventOpen} as={Fragment}>
-        <Dialog
-          as="div"
-          className="fixed inset-0 z-10 overflow-y-auto"
-          onClose={() => setIsAddEventOpen(false)}
-        >
-          <div className="min-h-screen px-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0"
-              enterTo="opacity-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
-            >
-              <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
-            </Transition.Child>
-
-            {/* This element is to trick the browser into centering the modal contents. */}
-            <span className="inline-block h-screen align-middle" aria-hidden="true">
-              &#8203;
-            </span>
-
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-                <Dialog.Title
-                  as="h3"
-                  className="text-lg font-medium leading-6 text-gray-900 flex justify-between items-center"
-                >
-                  <span>Add New Event</span>
-                  <button
-                    onClick={() => setIsAddEventOpen(false)}
-                    className="text-gray-400 hover:text-gray-500"
-                  >
-                    <HiOutlineX className="h-6 w-6" />
-                  </button>
-                </Dialog.Title>
-                
-                <form onSubmit={handleSubmitEvent} className="mt-4">
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                        Event Title *
-                      </label>
-                      <input
-                        type="text"
-                        name="title"
-                        id="title"
-                        required
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                        value={newEvent.title}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-                        Event Type
-                      </label>
-                      <select
-                        id="type"
-                        name="type"
-                        className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                        value={newEvent.type}
-                        onChange={handleInputChange}
-                      >
-                        <option value="meeting">Meeting</option>
-                        <option value="hearing">Hearing</option>
-                        <option value="deadline">Deadline</option>
-                        <option value="reminder">Reminder</option>
-                      </select>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        id="isAllDay"
-                        name="isAllDay"
-                        type="checkbox"
-                        className="h-4 w-4 text-[#800000] focus:ring-[#800000] border-gray-300 rounded"
-                        checked={newEvent.isAllDay}
-                        onChange={handleInputChange}
-                      />
-                      <label htmlFor="isAllDay" className="ml-2 block text-sm text-gray-700">
-                        All-day event
-                      </label>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                          Start Date
-                        </label>
-                        <input
-                          type="date"
-                          name="startDate"
-                          id="startDate"
-                          required
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                          value={newEvent.startDate}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                      
-                      {!newEvent.isAllDay && (
-                        <div>
-                          <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
-                            Start Time
-                          </label>
-                          <input
-                            type="time"
-                            name="startTime"
-                            id="startTime"
-                            required={!newEvent.isAllDay}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                            value={newEvent.startTime}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-                          End Date
-                        </label>
-                        <input
-                          type="date"
-                          name="endDate"
-                          id="endDate"
-                          required
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                          value={newEvent.endDate}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                      
-                      {!newEvent.isAllDay && (
-                        <div>
-                          <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
-                            End Time
-                          </label>
-                          <input
-                            type="time"
-                            name="endTime"
-                            id="endTime"
-                            required={!newEvent.isAllDay}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                            value={newEvent.endTime}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        id="isVirtual"
-                        name="isVirtual"
-                        type="checkbox"
-                        className="h-4 w-4 text-[#800000] focus:ring-[#800000] border-gray-300 rounded"
-                        checked={newEvent.isVirtual}
-                        onChange={handleInputChange}
-                      />
-                      <label htmlFor="isVirtual" className="ml-2 block text-sm text-gray-700">
-                        Virtual meeting
-                      </label>
-                    </div>
-                    
-                    {newEvent.isVirtual ? (
-                      <div>
-                        <label htmlFor="meetingLink" className="block text-sm font-medium text-gray-700">
-                          Meeting Link
-                        </label>
-                        <input
-                          type="url"
-                          name="meetingLink"
-                          id="meetingLink"
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                          placeholder="https://zoom.us/j/..."
-                          value={newEvent.meetingLink}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                          Location
-                        </label>
-                        <input
-                          type="text"
-                          name="location"
-                          id="location"
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                          placeholder="Office, Courthouse, etc."
-                          value={newEvent.location}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    )}
-                    
-                    <div>
-                      <label htmlFor="relatedCase" className="block text-sm font-medium text-gray-700">
-                        Related Case
-                      </label>
-                      <select
-                        id="relatedCase"
-                        name="relatedCase"
-                        className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                        value={newEvent.relatedCase}
-                        onChange={handleInputChange}
-                      >
-                        <option value="">None</option>
-                        {cases.map(caseItem => (
-                          <option key={caseItem.id} value={caseItem.title}>
-                            {caseItem.title}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                        Description
-                      </label>
-                      <textarea
-                        id="description"
-                        name="description"
-                        rows={3}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
-                        value={newEvent.description}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                      onClick={() => setIsAddEventOpen(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                    >
-                      Save Event
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </Transition.Child>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-gray-900">{toastMessage.text}</p>
           </div>
-        </Dialog>
-      </Transition>
+          <button
+            className="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-500 rounded-lg p-1.5"
+            onClick={() => setToastMessage(null)}
+          >
+            <span className="sr-only">Dismiss</span>
+            <HiOutlineX className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* CSS for animations */}
+      <style>
+        {`
+          @keyframes slide-up {
+            from {
+              transform: translateY(1rem);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          .animate-slide-up {
+            animation: slide-up 0.3s ease-out forwards;
+          }
+          
+          @keyframes fade-in {
+            from {
+              opacity: 0;
+              transform: translateY(-5px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .animate-fade-in {
+            animation: fade-in 0.2s ease-out forwards;
+          }
+          
+          /* For text truncation in list view */
+          .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+          .sticky {
+            position: sticky;
+            z-index: 20;
+          }
+        `}
+      </style>
     </div>
   );
 };
 
-export default ClientCalendarPage;
+export default function CalendarPageWrapper() {
+  return (
+    <ErrorBoundary>
+      <ClientCalendarPage />
+    </ErrorBoundary>
+  );
+}

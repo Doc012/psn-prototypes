@@ -25,6 +25,7 @@ import CalendarPage from './pages/private/client/ClientCalendarPage';
 import InvoicesPage from './pages/private/client/ClientInvoicesPage';
 import NotificationsPage from './pages/private/client/ClientNotificationsPage';
 import SupportPage from './pages/private/client/ClientSupportPage';
+import NewMessagePage from './pages/private/client/NewMessagePage'; // New import
 
 // Private pages - Attorney
 import AttorneyDashboardPage from './pages/private/attorney/AttorneyDashboardPage';
@@ -122,6 +123,11 @@ const ClientPortalRoutes = () => {
         <Route path="messages" element={
           <ProtectedRoute>
             <MessagesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="messages/new" element={
+          <ProtectedRoute>
+            <NewMessagePage />
           </ProtectedRoute>
         } />
         <Route path="messages/:id" element={

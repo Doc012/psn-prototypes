@@ -18,7 +18,8 @@ import {
   HiOutlineSearch,
   HiOutlineX,
   HiOutlinePlus,
-  HiOutlineShieldCheck
+  HiOutlineShieldCheck,
+  HiOutlineInformationCircle // Added the missing icon
 } from 'react-icons/hi';
 
 const ClientSupportPage = () => {
@@ -36,6 +37,15 @@ const ClientSupportPage = () => {
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const fileInputRef = useRef(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [replyText, setReplyText] = useState('');
+
+  // Helper function to create recent dates
+  const getRecentDate = (daysAgo) => {
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    return date.toISOString();
+  };
 
   // Fetch support tickets
   useEffect(() => {
@@ -48,20 +58,20 @@ const ClientSupportPage = () => {
         status: 'open', 
         category: 'Documents',
         priority: 'medium',
-        created: '2023-05-18T14:30:00',
-        updated: '2023-05-18T15:45:00',
+        created: getRecentDate(2), // 2 days ago
+        updated: getRecentDate(1), // 1 day ago
         messages: [
           { 
             id: 1, 
             from: 'client', 
             message: 'I need clarification on what documents are required for my case filing.', 
-            timestamp: '2023-05-18T14:30:00' 
+            timestamp: getRecentDate(2) // 2 days ago
           },
           { 
             id: 2, 
             from: 'support', 
             message: 'Thank you for your inquiry. For your specific case type, you will need to provide the following documents: 1) Proof of identity, 2) Relevant contracts, 3) Financial statements from the past 3 months. Let me know if you have any questions about these requirements.', 
-            timestamp: '2023-05-18T15:45:00',
+            timestamp: getRecentDate(1), // 1 day ago
             author: 'Sarah Johnson, Support Specialist'
           }
         ]
@@ -73,33 +83,33 @@ const ClientSupportPage = () => {
         status: 'resolved', 
         category: 'Account Access',
         priority: 'high',
-        created: '2023-05-15T09:20:00',
-        updated: '2023-05-15T11:30:00',
+        created: getRecentDate(4), // 4 days ago
+        updated: getRecentDate(3), // 3 days ago
         messages: [
           { 
             id: 1, 
             from: 'client', 
             message: 'I changed my password but now I can\'t log in to my account.', 
-            timestamp: '2023-05-15T09:20:00' 
+            timestamp: getRecentDate(4) // 4 days ago
           },
           { 
             id: 2, 
             from: 'support', 
             message: 'I\'m sorry to hear you\'re having trouble. Let\'s reset your password again. I\'ve sent a password reset link to your email address. Please check your inbox and follow the instructions.', 
-            timestamp: '2023-05-15T09:45:00',
+            timestamp: getRecentDate(4), // 4 days ago, 30 minutes later
             author: 'Michael Lee, Technical Support'
           },
           { 
             id: 3, 
             from: 'client', 
             message: 'Thank you, I received the email and was able to reset my password. I can log in now.', 
-            timestamp: '2023-05-15T11:00:00' 
+            timestamp: getRecentDate(3.5) // 3.5 days ago
           },
           { 
             id: 4, 
             from: 'support', 
             message: 'Great! I\'m glad to hear you can access your account now. If you have any other issues, please don\'t hesitate to reach out.', 
-            timestamp: '2023-05-15T11:30:00',
+            timestamp: getRecentDate(3), // 3 days ago
             author: 'Michael Lee, Technical Support'
           }
         ]
@@ -111,33 +121,33 @@ const ClientSupportPage = () => {
         status: 'in-progress', 
         category: 'Appointments',
         priority: 'medium',
-        created: '2023-05-10T16:15:00',
-        updated: '2023-05-12T10:20:00',
+        created: getRecentDate(7), // 7 days ago
+        updated: getRecentDate(5), // 5 days ago
         messages: [
           { 
             id: 1, 
             from: 'client', 
-            message: 'I need to reschedule my upcoming consultation appointment scheduled for May 15th at 2:00 PM.', 
-            timestamp: '2023-05-10T16:15:00' 
+            message: 'I need to reschedule my upcoming consultation appointment scheduled for June 15th at 2:00 PM.', 
+            timestamp: getRecentDate(7) // 7 days ago
           },
           { 
             id: 2, 
             from: 'support', 
             message: 'I\'d be happy to help you reschedule. I\'ve notified your attorney about your request. Could you please let us know some alternative dates and times that would work for you in the next two weeks?', 
-            timestamp: '2023-05-11T09:30:00',
+            timestamp: getRecentDate(6), // 6 days ago
             author: 'Emma Clark, Client Coordinator'
           },
           { 
             id: 3, 
             from: 'client', 
-            message: 'Thank you. I am available on May 18th anytime between 1:00 PM and 5:00 PM, or May 20th in the morning.', 
-            timestamp: '2023-05-11T14:45:00' 
+            message: 'Thank you. I am available on June 18th anytime between 1:00 PM and 5:00 PM, or June 20th in the morning.', 
+            timestamp: getRecentDate(5.5) // 5.5 days ago
           },
           { 
             id: 4, 
             from: 'support', 
-            message: 'I\'ve checked with your attorney, and they are available on May 18th at 3:00 PM. Would that work for you?', 
-            timestamp: '2023-05-12T10:20:00',
+            message: 'I\'ve checked with your attorney, and they are available on June 18th at 3:00 PM. Would that work for you?', 
+            timestamp: getRecentDate(5), // 5 days ago
             author: 'Emma Clark, Client Coordinator'
           }
         ]
@@ -291,6 +301,11 @@ const ClientSupportPage = () => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const showToast = (message, type = "info") => {
+    setToastMessage({ text: message, type });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const handleTicketSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
@@ -325,9 +340,60 @@ const ClientSupportPage = () => {
       setShowTicketForm(false);
       setLoading(false);
       
-      // Show success message
-      alert('Support ticket created successfully!');
+      // Show success message using toast instead of alert
+      showToast('Support ticket created successfully!', 'success');
     }, 1000);
+  };
+
+  const handleSendReply = (ticketId) => {
+    if (!replyText.trim()) return;
+    
+    setTickets(prev => 
+      prev.map(ticket => {
+        if (ticket.id === ticketId) {
+          const newMessage = {
+            id: ticket.messages.length + 1,
+            from: 'client',
+            message: replyText,
+            timestamp: new Date().toISOString()
+          };
+          
+          return {
+            ...ticket,
+            messages: [...ticket.messages, newMessage],
+            updated: new Date().toISOString()
+          };
+        }
+        return ticket;
+      })
+    );
+    
+    setReplyText('');
+    showToast('Reply sent successfully', 'success');
+    
+    // Simulate support reply after a delay
+    setTimeout(() => {
+      setTickets(prev => 
+        prev.map(ticket => {
+          if (ticket.id === ticketId) {
+            const supportMessage = {
+              id: ticket.messages.length + 2,
+              from: 'support',
+              message: "Thank you for your message. We'll look into this and get back to you as soon as possible.",
+              timestamp: new Date().toISOString(),
+              author: "Support Team"
+            };
+            
+            return {
+              ...ticket,
+              messages: [...ticket.messages, supportMessage],
+              updated: new Date().toISOString()
+            };
+          }
+          return ticket;
+        })
+      );
+    }, 5000);
   };
 
   const getStatusColor = (status) => {
@@ -368,6 +434,31 @@ const ClientSupportPage = () => {
         return <HiOutlineCheckCircle className="h-5 w-5 text-green-500" />;
       default:
         return <HiOutlineClock className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      return `Today at ${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     }
   };
 
@@ -771,7 +862,7 @@ const ClientSupportPage = () => {
                             </div>
                             <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
                               <p>
-                                Created on {new Date(ticket.created).toLocaleDateString()}
+                                Created {formatDate(ticket.created)}
                               </p>
                             </div>
                           </div>
@@ -793,7 +884,7 @@ const ClientSupportPage = () => {
                                     <p className="text-sm">{message.message}</p>
                                     <div className="mt-1 flex justify-between items-center">
                                       <p className="text-xs text-gray-500">
-                                        {new Date(message.timestamp).toLocaleString()}
+                                        {formatDate(message.timestamp)}
                                       </p>
                                       {message.from === 'support' && message.author && (
                                         <p className="text-xs text-gray-500 ml-4">
@@ -810,12 +901,16 @@ const ClientSupportPage = () => {
                               <div className="mt-4 flex">
                                 <input
                                   type="text"
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
                                   className="shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md"
                                   placeholder="Reply to this ticket..."
                                 />
                                 <button
                                   type="button"
-                                  className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                                  onClick={() => handleSendReply(ticket.id)}
+                                  disabled={!replyText.trim()}
+                                  className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   Send
                                 </button>
@@ -879,11 +974,11 @@ const ClientSupportPage = () => {
                     </h3>
                     <div className="mt-4 text-sm text-gray-500">
                       <p className="mb-2">Send us an email for non-urgent matters:</p>
-                      <p className="text-lg font-medium text-gray-900 mb-1">support@lawfirm.com</p>
+                      <p className="text-lg font-medium text-gray-900 mb-1">support@psnattorneys.co.za</p>
                       <p className="mb-4">We typically respond within 24 business hours.</p>
                       <div className="bg-gray-50 p-4 rounded-md">
                         <p className="text-sm text-gray-500 font-medium">For billing inquiries:</p>
-                        <p className="text-gray-900 mt-1">billing@lawfirm.com</p>
+                        <p className="text-gray-900 mt-1">billing@psnattorneys.co.za</p>
                       </div>
                     </div>
                   </div>
@@ -897,6 +992,7 @@ const ClientSupportPage = () => {
                       <p>Chat with our support team in real-time during business hours:</p>
                       <button
                         type="button"
+                        onClick={() => showToast("Live chat service will be available soon!", "info")}
                         className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                       >
                         <HiOutlineChat className="-ml-1 mr-2 h-5 w-5" />
@@ -909,11 +1005,11 @@ const ClientSupportPage = () => {
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Office Locations</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="bg-gray-50 p-4 rounded-md">
-                        <h4 className="font-medium text-gray-900">Main Office</h4>
+                        <h4 className="font-medium text-gray-900">Cape Town Office</h4>
                         <address className="mt-2 not-italic text-sm text-gray-500">
                           123 Legal Avenue<br />
                           Suite 500<br />
-                          New York, NY 10001
+                          Cape Town, 8001
                         </address>
                         <p className="mt-2 text-sm text-gray-500">
                           <span className="font-medium">Hours:</span> Monday-Friday, 9:00 AM - 5:00 PM
@@ -921,11 +1017,11 @@ const ClientSupportPage = () => {
                       </div>
                       
                       <div className="bg-gray-50 p-4 rounded-md">
-                        <h4 className="font-medium text-gray-900">West Coast Office</h4>
+                        <h4 className="font-medium text-gray-900">Johannesburg Office</h4>
                         <address className="mt-2 not-italic text-sm text-gray-500">
                           456 Justice Boulevard<br />
                           Floor 12<br />
-                          Los Angeles, CA 90001
+                          Johannesburg, 2000
                         </address>
                         <p className="mt-2 text-sm text-gray-500">
                           <span className="font-medium">Hours:</span> Monday-Friday, 9:00 AM - 5:00 PM
@@ -939,6 +1035,51 @@ const ClientSupportPage = () => {
           )}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 z-50 animate-fade-in-up">
+          <div className={`rounded-md p-4 shadow-lg ${
+            toastMessage.type === 'success' ? 'bg-green-50 text-green-800' : 
+            toastMessage.type === 'error' ? 'bg-red-50 text-red-800' : 
+            'bg-blue-50 text-blue-800'
+          }`}>
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                {toastMessage.type === 'success' ? (
+                  <HiOutlineCheckCircle className="h-5 w-5 text-green-400" />
+                ) : toastMessage.type === 'error' ? (
+                  <HiOutlineExclamation className="h-5 w-5 text-red-400" />
+                ) : (
+                  <HiOutlineInformationCircle className="h-5 w-5 text-blue-400" />
+                )}
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium">{toastMessage.text}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <div className="-mx-1.5 -my-1.5">
+                  <button
+                    onClick={() => setToastMessage(null)}
+                    className={`inline-flex rounded-md p-1.5 ${
+                      toastMessage.type === 'success' ? 'text-green-500 hover:bg-green-100' : 
+                      toastMessage.type === 'error' ? 'text-red-500 hover:bg-red-100' : 
+                      'text-blue-500 hover:bg-blue-100'
+                    } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      toastMessage.type === 'success' ? 'focus:ring-green-600' : 
+                      toastMessage.type === 'error' ? 'focus:ring-red-600' : 
+                      'focus:ring-blue-600'
+                    }`}
+                  >
+                    <span className="sr-only">Dismiss</span>
+                    <HiOutlineX className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

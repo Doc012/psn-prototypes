@@ -45,6 +45,10 @@ const ClientMessagesPage = () => {
   const [showMobileConversations, setShowMobileConversations] = useState(true);
   const [typingIndicator, setTypingIndicator] = useState(false);
   const [conversationFilter, setConversationFilter] = useState('all'); // 'all', 'unread', 'archived'
+  const [previewDocument, setPreviewDocument] = useState(null);
+  const [showDocumentPreview, setShowDocumentPreview] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -56,6 +60,9 @@ const ClientMessagesPage = () => {
   yesterday.setDate(yesterday.getDate() - 1);
   const lastWeek = new Date(today);
   lastWeek.setDate(lastWeek.getDate() - 7);
+  
+  // Common emojis array
+  const commonEmojis = ['👍', '👌', '👏', '🙏', '😊', '🤔', '👨‍⚖️', '⚖️', '📄', '✅'];
   
   // Fetch conversations
   useEffect(() => {
@@ -529,6 +536,18 @@ const ClientMessagesPage = () => {
     );
   };
   
+  // Handle document preview
+  const handleDocumentPreview = (attachment) => {
+    setPreviewDocument(attachment);
+    setShowDocumentPreview(true);
+  };
+  
+  // Close document preview
+  const closeDocumentPreview = () => {
+    setShowDocumentPreview(false);
+    setPreviewDocument(null);
+  };
+  
   // Format message timestamp
   const formatMessageTime = (timestamp) => {
     try {
@@ -612,6 +631,27 @@ const ClientMessagesPage = () => {
       return format(date, 'EEEE, MMMM d, yyyy');
     }
   };
+  
+  // Get parameters
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const success = params.get('success');
+    
+    if (success === 'true') {
+      setShowSuccessAlert(true);
+      
+      // Remove the success parameter from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Hide success alert after 5 seconds
+      const timer = setTimeout(() => {
+        setShowSuccessAlert(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.search]);
   
   if (loading) {
     return (
@@ -1019,15 +1059,13 @@ const ClientMessagesPage = () => {
                                           <ul className="mt-1 space-y-1">
                                             {message.attachments.map((attachment) => (
                                               <li key={attachment.id} className="group">
-                                                <a
-                                                  href={`#attachment-${attachment.id}`}
-                                                  className={`text-xs flex items-center p-1 rounded ${
+                                                <button
+                                                  onClick={() => handleDocumentPreview(attachment)}
+                                                  className={`text-xs flex items-center p-1 rounded w-full text-left ${
                                                     isCurrentUser 
                                                       ? 'text-gray-100 hover:text-white hover:bg-[#9a3232]' 
                                                       : 'text-[#800000] hover:text-[#600000] hover:bg-gray-100'
                                                   }`}
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
                                                 >
                                                   {attachment.type.includes('image') ? (
                                                     <HiOutlinePhotograph className="h-4 w-4 mr-1" />
@@ -1039,7 +1077,7 @@ const ClientMessagesPage = () => {
                                                   <HiOutlineDownload className={`ml-1 h-4 w-4 opacity-0 group-hover:opacity-100 ${
                                                     isCurrentUser ? 'text-gray-200' : 'text-gray-500'
                                                   }`} />
-                                                </a>
+                                                </button>
                                               </li>
                                             ))}
                                           </ul>
@@ -1100,6 +1138,16 @@ const ClientMessagesPage = () => {
                             <span></span>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Read receipt notification */}
+                  {messages.length > 0 && messages[messages.length - 1].sender.id === user?.id && !typingIndicator && (
+                    <div className="flex justify-end mt-1 mr-2">
+                      <div className="text-xs text-gray-500 flex items-center">
+                        <span>Read {formatDistanceToNow(new Date(new Date().setMinutes(new Date().getMinutes() - 1)), { addSuffix: true })}</span>
+                        <HiOutlineCheckCircle className="ml-1 h-3 w-3 text-green-500" />
                       </div>
                     </div>
                   )}
@@ -1184,12 +1232,34 @@ const ClientMessagesPage = () => {
                             />
                           </div>
                           
-                          <button
-                            type="button"
-                            className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-                          >
-                            <HiOutlineEmojiHappy className="h-5 w-5" />
-                          </button>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
+                              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                            >
+                              <HiOutlineEmojiHappy className="h-5 w-5" />
+                            </button>
+                            
+                            {showEmojiPicker && (
+                              <div className="absolute bottom-full right-0 mb-2 bg-white rounded-md shadow-lg p-2 z-10 border border-gray-200">
+                                <div className="grid grid-cols-5 gap-1">
+                                  {commonEmojis.map((emoji, idx) => (
+                                    <button
+                                      key={idx}
+                                      className="w-8 h-8 text-xl hover:bg-gray-100 rounded flex items-center justify-center"
+                                      onClick={() => {
+                                        setNewMessage(prev => prev + emoji);
+                                        setShowEmojiPicker(false);
+                                      }}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       
@@ -1220,18 +1290,100 @@ const ClientMessagesPage = () => {
                 <p className="mt-1 text-base text-gray-500 max-w-md">
                   Select a conversation from the list or start a new message to communicate with your legal team.
                 </p>
-                <Link
-                  to="/client-portal/messages/new"
-                  className="mt-6 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                >
-                  <HiOutlinePlusCircle className="-ml-1 mr-2 h-5 w-5" />
-                  New Message
-                </Link>
+                <div className="mt-6 space-y-4">
+                  <Link
+                    to="/client-portal/messages/new"
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                  >
+                    <HiOutlinePlusCircle className="-ml-1 mr-2 h-5 w-5" />
+                    New Message
+                  </Link>
+                  <div className="text-sm text-gray-500">
+                    <p>You can message your legal team about:</p>
+                    <ul className="mt-2 list-disc pl-5 text-left">
+                      <li>Case updates and questions</li>
+                      <li>Document clarification</li>
+                      <li>Scheduling meetings or calls</li>
+                      <li>Billing inquiries</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
+      
+      {/* Document Preview Modal */}
+      {showDocumentPreview && previewDocument && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={closeDocumentPreview}></div>
+            
+            <div className="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full sm:p-6">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
+                <button
+                  type="button"
+                  className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+                  onClick={closeDocumentPreview}
+                >
+                  <span className="sr-only">Close</span>
+                  <HiOutlineX className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="sm:flex sm:items-start">
+                <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+                    {previewDocument.type.includes('image') ? (
+                      <HiOutlinePhotograph className="h-5 w-5 mr-2 text-gray-500" />
+                    ) : (
+                      <HiOutlineDocumentText className="h-5 w-5 mr-2 text-gray-500" />
+                    )}
+                    {previewDocument.name}
+                    <span className="ml-2 text-sm text-gray-500">({previewDocument.size})</span>
+                  </h3>
+                  
+                  <div className="mt-4">
+                    {previewDocument.type.includes('image') ? (
+                      <div className="flex justify-center">
+                        <img 
+                          src="https://via.placeholder.com/800x600" 
+                          alt={previewDocument.name}
+                          className="max-h-[70vh] object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="border rounded-lg p-4 bg-gray-50 min-h-[50vh] flex flex-col items-center justify-center">
+                        <HiOutlineDocumentText className="h-16 w-16 text-gray-400 mb-4" />
+                        <p className="text-gray-500 text-center">Preview not available. Please download the document to view it.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#800000] text-base font-medium text-white hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={closeDocumentPreview}
+                >
+                  <HiOutlineDownload className="-ml-1 mr-2 h-5 w-5" />
+                  Download
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] sm:mt-0 sm:w-auto sm:text-sm"
+                  onClick={closeDocumentPreview}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* CSS for typing indicator */}
       <style jsx="true">{`
@@ -1272,6 +1424,31 @@ const ClientMessagesPage = () => {
           }
         }
       `}</style>
+      
+      {/* Success alert */}
+      {showSuccessAlert && (
+        <div className="fixed top-20 right-4 z-50 bg-green-50 p-4 rounded-md shadow-lg border border-green-100 transition-all duration-500 ease-in-out transform translate-x-0 opacity-100">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <HiOutlineCheckCircle className="h-5 w-5 text-green-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-800">Message sent successfully!</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <div className="-mx-1.5 -my-1.5">
+                <button
+                  onClick={() => setShowSuccessAlert(false)}
+                  className="inline-flex rounded-md p-1.5 text-green-500 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <HiOutlineX className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
