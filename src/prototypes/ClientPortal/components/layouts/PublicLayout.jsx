@@ -270,6 +270,27 @@ const PublicLayout = () => {
                 Return to Main App
               </div>
             </a>
+            
+            {/* Add a divider */}
+            <div className="border-t border-gray-200 my-4"></div>
+            
+            {/* Add login and registration links */}
+            <div className="pl-3 pr-4 py-2 flex space-x-3">
+              <Link
+                to={getPath('login')}
+                className="flex-1 px-4 py-2 border border-transparent text-center text-sm font-medium rounded-md text-[#800000] bg-white hover:bg-gray-50 border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] transition-colors duration-300"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign In
+              </Link>
+              <Link
+                to={getPath('register')}
+                className="flex-1 px-4 py-2 border border-transparent text-center text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] transition-colors duration-300"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Register
+              </Link>
+            </div>
           </div>
         </div>
       </nav>

@@ -28,6 +28,7 @@ const PrivateLayout = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth); // Track window width
 
   // Reset page loading on route change
   useEffect(() => {
@@ -67,6 +68,16 @@ const PrivateLayout = () => {
     setSidebarCollapsed(prev => !prev);
   };
 
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="h-screen flex overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Mobile sidebar backdrop */}
@@ -93,21 +104,6 @@ const PrivateLayout = () => {
         />
       </AnimatePresence>
       
-      {/* Mobile sidebar open button - easier to reach */}
-      <div className="lg:hidden fixed bottom-4 left-4 z-30">
-        <motion.button
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.4 }}
-          onClick={toggleSidebar}
-          className={`p-3 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] ${
-            sidebarOpen ? 'bg-white text-[#800000]' : 'bg-[#800000] text-white'
-          }`}
-        >
-          {sidebarOpen ? <HiX className="h-6 w-6" /> : <HiMenu className="h-6 w-6" />}
-        </motion.button>
-      </div>
-      
       {/* Desktop sidebar collapse/expand button */}
       <div className="hidden lg:block fixed z-30 transition-all duration-300 ease-in-out"
         style={{ 
@@ -128,11 +124,11 @@ const PrivateLayout = () => {
         </button>
       </div>
       
-      {/* Main content area - ensure initial margins match collapsed state */}
+      {/* Main content area - only apply margin on desktop */}
       <div 
         className="flex flex-col flex-1 overflow-hidden transition-all duration-300 ease-in-out"
         style={{ 
-          marginLeft: sidebarCollapsed ? '5rem' : '0rem',
+          marginLeft: windowWidth >= 1024 ? (sidebarCollapsed ? '5rem' : '16rem') : '0',
         }}
       >
         <PrivateNavbar 
@@ -140,7 +136,7 @@ const PrivateLayout = () => {
           isSidebarOpen={sidebarOpen}
           user={user}
           dashboardPath={dashboardPath}
-          userRole={userRole}  // Add this prop
+          userRole={userRole}
         />
         
         <main className="flex-1 relative overflow-y-auto focus:outline-none">

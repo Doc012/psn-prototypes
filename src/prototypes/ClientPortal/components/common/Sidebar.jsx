@@ -89,12 +89,13 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
 
   return (
     <motion.div 
+      // For mobile devices, always use expanded state when sidebar is open
       initial="collapsed"
-      animate={isCollapsed ? "collapsed" : "expanded"}
+      animate={isOpen ? "expanded" : (isCollapsed ? "collapsed" : "expanded")}
       variants={sidebarVariants}
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className={`
-        fixed inset-y-0 left-0 z-40 bg-white shadow-lg transform 
+        fixed inset-y-0 left-0 z-40 bg-white shadow-lg
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         lg:translate-x-0 transition-transform duration-300 ease-in-out
         border-r border-gray-200 flex-shrink-0 overflow-hidden
@@ -113,10 +114,11 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
                 e.target.src = "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?semt=ais_hybrid&w=740";
               }}
             />
-            {!isCollapsed && (
+            {/* Always show logo text on mobile when sidebar is open */}
+            {(!isCollapsed || isOpen) && (
               <motion.span 
-                initial={isCollapsed ? { opacity: 0 } : { opacity: 1 }}
-                animate={isCollapsed ? { opacity: 0 } : { opacity: 1 }}
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 0.2 }}
                 className="ml-2 text-lg font-semibold text-[#800000] whitespace-nowrap"
               >
@@ -139,13 +141,13 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
             
             return (
               <NavLink
-                key={item.id}  // Use the unique id as key instead of name
+                key={item.id}
                 to={item.href}
                 className={`group flex items-center px-2 py-2 text-base font-medium rounded-md transition-all duration-300 ${
                   active
                     ? 'bg-[#800000]/10 text-[#800000]'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                } ${isCollapsed ? 'justify-center' : ''}`}
+                } ${(isCollapsed && !isOpen) ? 'justify-center' : ''}`}
                 title={item.name}
               >
                 <item.icon
@@ -157,10 +159,11 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
                   aria-hidden="true"
                 />
                 
-                {!isCollapsed && (
+                {/* Show text labels on mobile when sidebar is open */}
+                {(!isCollapsed || isOpen) && (
                   <motion.span 
-                    initial={isCollapsed ? { opacity: 0, width: 0 } : { opacity: 1, width: 'auto' }}
-                    animate={isCollapsed ? { opacity: 0, width: 0 } : { opacity: 1, width: 'auto' }}
+                    initial={{ opacity: 1, width: 'auto' }}
+                    animate={{ opacity: 1, width: 'auto' }}
                     transition={{ duration: 0.2 }}
                     className="ml-3 whitespace-nowrap overflow-hidden"
                   >
@@ -168,7 +171,7 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
                   </motion.span>
                 )}
                 
-                {isCollapsed && active && (
+                {(isCollapsed && !isOpen) && active && (
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -183,12 +186,13 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
         </nav>
 
         {/* Sidebar footer */}
-        <div className={`p-4 border-t border-gray-200 ${isCollapsed ? 'flex justify-center' : ''}`}>
+        <div className={`p-4 border-t border-gray-200 ${(isCollapsed && !isOpen) ? 'flex justify-center' : ''}`}>
           <div className="flex items-center">
-            {!isCollapsed && (
+            {/* Show user info on mobile when sidebar is open */}
+            {(!isCollapsed || isOpen) && (
               <motion.div 
-                initial={isCollapsed ? { opacity: 0, width: 0 } : { opacity: 1, width: 'auto' }}
-                animate={isCollapsed ? { opacity: 0, width: 0 } : { opacity: 1, width: 'auto' }}
+                initial={{ opacity: 1, width: 'auto' }}
+                animate={{ opacity: 1, width: 'auto' }}
                 className="mr-3 text-sm text-gray-500"
               >
                 <span className="font-medium text-gray-700">
@@ -204,10 +208,7 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed = true }) => {
           <div className="mt-4">
             <button
               onClick={() => {
-                // You can add your logout logic here
-                // For example: logout() if you have a logout function in your auth context
                 if (window.confirm('Are you sure you want to log out?')) {
-                  // Navigate to login page or call logout function from auth context
                   window.location.href = '/client-portal/login';
                 }
               }}
