@@ -183,7 +183,7 @@ const PrivateNavbar = ({ openSidebar }) => {
                 <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                   <div className="py-1">
                     <Link
-                      to="/dashboard/profile"
+                      to="#"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => setProfileOpen(false)}
                     >
@@ -191,7 +191,7 @@ const PrivateNavbar = ({ openSidebar }) => {
                       Your Profile
                     </Link>
                     <Link
-                      to="/dashboard/settings"
+                      to="#"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => setProfileOpen(false)}
                     >
