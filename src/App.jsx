@@ -43,7 +43,13 @@ const App = () => {
         "Document e-signing capabilities",
         "Mobile responsive design"
       ],
-      technologies: ["React", "Tailwind CSS", "JWT Authentication", "Encryption"]
+      technologies: [
+        "React.js", 
+        "Tailwind CSS", 
+        "Framer Motion", 
+        "React Router", 
+        "Context API"
+      ]
     },
     {
       id: 2,
@@ -67,7 +73,13 @@ const App = () => {
         "Payment plan management",
         "Overdue payment flagging system"
       ],
-      technologies: ["React", "Tailwind CSS", "Chart.js", "Data Visualization"]
+      technologies: [
+        "React.js", 
+        "Tailwind CSS", 
+        "Chart.js", 
+        "React Query", 
+        "React Table"
+      ]
     },
     {
       id: 3,
@@ -91,7 +103,13 @@ const App = () => {
         "Document template library",
         "Access control and permission settings"
       ],
-      technologies: ["React", "Tailwind CSS", "Full-text Search", "OCR Integration"]
+      technologies: [
+        "React.js", 
+        "Tailwind CSS", 
+        "React PDF Viewer", 
+        "React DnD", 
+        "LocalForage"
+      ]
     },
     {
       id: 4,
@@ -115,7 +133,13 @@ const App = () => {
         "Multi-user assignment and notification system",
         "Timeline export and sharing capabilities"
       ],
-      technologies: ["React", "Tailwind CSS", "Timeline Visualization", "Calendar Integration"]
+      technologies: [
+        "React.js", 
+        "Tailwind CSS", 
+        "React Flow", 
+        "Date-fns", 
+        "React Calendar"
+      ]
     },
     {
       id: 5,
@@ -139,7 +163,13 @@ const App = () => {
         "A/B testing capabilities for email effectiveness",
         "Multi-language support for diverse client bases"
       ],
-      technologies: ["React", "Tailwind CSS", "Email Integration", "Analytics"]
+      technologies: [
+        "React.js", 
+        "Tailwind CSS", 
+        "React Email Editor", 
+        "React Hook Form", 
+        "Zod Validation"
+      ]
     }
   ];
 
