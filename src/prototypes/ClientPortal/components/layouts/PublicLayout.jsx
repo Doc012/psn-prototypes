@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { HiOutlineMenuAlt3, HiX } from 'react-icons/hi';
-// import Footer from './Footer'; // Assuming you have a Footer component
+import { HiOutlineMenuAlt3, HiX, HiOutlineHome } from 'react-icons/hi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import logoImage from '../../../../assets/PSN.png'; // Make sure this path is correct
+import logoImage from '../../../../assets/PSN.png';
 
 const PublicLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -159,6 +158,15 @@ const PublicLayout = () => {
                   <span className={`absolute h-0.5 bg-[#800000] left-0 right-0 bottom-0 transition-transform duration-300 ${isActive('faq') ? 'scale-x-100' : 'scale-x-0 hover:scale-x-75'}`} />
                 </Link>
                 
+                {/* Add Return to Main App link */}
+                <a
+                  href="/"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-300 relative text-gray-500 hover:text-gray-700"
+                >
+                  <HiOutlineHome className="mr-1 h-4 w-4" />
+                  Main App
+                  <span className={`absolute h-0.5 bg-[#800000] left-0 right-0 bottom-0 transition-transform duration-300 scale-x-0 hover:scale-x-75`} />
+                </a>
               </div>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-3">
@@ -250,6 +258,18 @@ const PublicLayout = () => {
             >
               Services
             </Link>
+            
+            {/* Add Return to Main App link for mobile */}
+            <a
+              href="/"
+              className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-all duration-300 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <div className="flex items-center">
+                <HiOutlineHome className="mr-2 h-5 w-5" />
+                Return to Main App
+              </div>
+            </a>
           </div>
         </div>
       </nav>
@@ -305,7 +325,8 @@ const PublicLayout = () => {
                   variants={fadeInUp}
                   whileHover={{ scale: 1.2, y: -3 }}
                   href="#"
-                  className="text-gray-400 hover:text-white transition-colors duration-300"
+                  className="text-gray-400 hover:text-gray-400 cursor-default"
+                  onClick={(e) => e.preventDefault()}
                 >
                   <span className="sr-only">Facebook</span>
                   <svg
@@ -325,7 +346,8 @@ const PublicLayout = () => {
                   variants={fadeInUp}
                   whileHover={{ scale: 1.2, y: -3 }}
                   href="#"
-                  className="text-gray-400 hover:text-white transition-colors duration-300"
+                  className="text-gray-400 hover:text-gray-400 cursor-default"
+                  onClick={(e) => e.preventDefault()}
                 >
                   <span className="sr-only">Twitter</span>
                   <svg
@@ -341,7 +363,8 @@ const PublicLayout = () => {
                   variants={fadeInUp}
                   whileHover={{ scale: 1.2, y: -3 }}
                   href="#"
-                  className="text-gray-400 hover:text-white transition-colors duration-300"
+                  className="text-gray-400 hover:text-gray-400 cursor-default"
+                  onClick={(e) => e.preventDefault()}
                 >
                   <span className="sr-only">LinkedIn</span>
                   <svg
@@ -373,48 +396,60 @@ const PublicLayout = () => {
               <motion.ul variants={staggerContainer} className="space-y-2">
                 <motion.li variants={fadeInUp}>
                   <Link
-                    to="/about"
+                    to={getPath('about')}
                     className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
                   >
                     About Us
                   </Link>
                 </motion.li>
                 <motion.li variants={fadeInUp}>
-                  <Link
-                    to="/practice-areas"
-                    className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
+                  <a
+                    href="#"
+                    className="text-gray-400 hover:text-gray-400 cursor-default inline-block"
+                    onClick={(e) => e.preventDefault()}
                   >
                     Practice Areas
-                  </Link>
+                  </a>
                 </motion.li>
                 <motion.li variants={fadeInUp}>
-                  <Link
-                    to="/attorneys"
-                    className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
+                  <a
+                    href="#"
+                    className="text-gray-400 hover:text-gray-400 cursor-default inline-block"
+                    onClick={(e) => e.preventDefault()}
                   >
                     Our Attorneys
-                  </Link>
+                  </a>
                 </motion.li>
                 <motion.li variants={fadeInUp}>
-                  <Link
-                    to="/resources"
-                    className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
+                  <a
+                    href="#"
+                    className="text-gray-400 hover:text-gray-400 cursor-default inline-block"
+                    onClick={(e) => e.preventDefault()}
                   >
                     Legal Resources
-                  </Link>
+                  </a>
                 </motion.li>
                 <motion.li variants={fadeInUp}>
                   <Link
-                    to="/contact"
+                    to={getPath('contact')}
                     className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
                   >
                     Contact Us
                   </Link>
                 </motion.li>
+                <motion.li variants={fadeInUp}>
+                  <a
+                    href="/"
+                    className="text-gray-300 hover:text-white transition-colors duration-300 inline-flex items-center"
+                  >
+                    <HiOutlineHome className="mr-1.5 h-4 w-4" />
+                    Return to Main App
+                  </a>
+                </motion.li>
               </motion.ul>
             </motion.div>
 
-            {/* Portal Links */}
+            {/* Portal Links - with inactive links */}
             <motion.div
               ref={portalLinksRef}
               initial="hidden"
@@ -427,7 +462,7 @@ const PublicLayout = () => {
               <motion.ul variants={staggerContainer} className="space-y-2">
                 <motion.li variants={fadeInUp}>
                   <Link
-                    to="/login"
+                    to={getPath('login')}
                     className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
                   >
                     Login
@@ -435,35 +470,38 @@ const PublicLayout = () => {
                 </motion.li>
                 <motion.li variants={fadeInUp}>
                   <Link
-                    to="/register"
+                    to={getPath('register')}
                     className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
                   >
                     Register
                   </Link>
                 </motion.li>
                 <motion.li variants={fadeInUp}>
-                  <Link
-                    to="/forgot-password"
-                    className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
+                  <a
+                    href="#"
+                    className="text-gray-400 hover:text-gray-400 cursor-default inline-block"
+                    onClick={(e) => e.preventDefault()}
                   >
                     Reset Password
-                  </Link>
+                  </a>
                 </motion.li>
                 <motion.li variants={fadeInUp}>
-                  <Link
-                    to="/portal-guide"
-                    className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
+                  <a
+                    href="#"
+                    className="text-gray-400 hover:text-gray-400 cursor-default inline-block"
+                    onClick={(e) => e.preventDefault()}
                   >
                     Portal Guide
-                  </Link>
+                  </a>
                 </motion.li>
                 <motion.li variants={fadeInUp}>
-                  <Link
-                    to="/security"
-                    className="text-gray-300 hover:text-white transition-colors duration-300 inline-block"
+                  <a
+                    href="#"
+                    className="text-gray-400 hover:text-gray-400 cursor-default inline-block"
+                    onClick={(e) => e.preventDefault()}
                   >
                     Security Information
-                  </Link>
+                  </a>
                 </motion.li>
               </motion.ul>
             </motion.div>
@@ -479,9 +517,9 @@ const PublicLayout = () => {
                 Contact Us
               </motion.h3>
               <motion.address variants={staggerContainer} className="not-italic text-gray-300">
-                <motion.p variants={fadeInUp} className="flex items-center mb-2">
+                <motion.p variants={fadeInUp} className="flex items-start mb-2">
                   <svg
-                    className="h-5 w-5 mr-2 text-gray-400"
+                    className="h-5 w-5 mr-2 text-gray-400 mt-1 flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -500,9 +538,10 @@ const PublicLayout = () => {
                       d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  123 Legal Street, Suite 300
-                  <br />
-                  Anytown, State 12345
+                  <span>
+                    PSN Incorporated, cnr Louis Trichardt Boulevard,<br />
+                    President Hoffman St, &, Vanderbijlpark
+                  </span>
                 </motion.p>
                 <motion.p variants={fadeInUp} className="flex items-center mb-2">
                   <svg
@@ -572,30 +611,42 @@ const PublicLayout = () => {
             <motion.div variants={fadeInUp} className="mb-4 md:mb-0 text-sm text-gray-400">
               &copy; {new Date().getFullYear()} PSN Attorneys. All rights reserved.
             </motion.div>
-            <motion.div variants={staggerContainer} className="flex space-x-6 text-sm text-gray-400">
+            <motion.div variants={staggerContainer} className="flex flex-wrap justify-center space-x-4 space-y-0 text-sm text-gray-400">
               <motion.div variants={fadeInUp} whileHover={{ y: -2 }}>
-                <Link
-                  to="/terms"
-                  className="hover:text-white transition-colors duration-300"
+                <a
+                  href="#"
+                  className="text-gray-400 hover:text-gray-400 cursor-default"
+                  onClick={(e) => e.preventDefault()}
                 >
                   Terms of Service
-                </Link>
+                </a>
               </motion.div>
               <motion.div variants={fadeInUp} whileHover={{ y: -2 }}>
-                <Link
-                  to="/privacy"
-                  className="hover:text-white transition-colors duration-300"
+                <a
+                  href="#"
+                  className="text-gray-400 hover:text-gray-400 cursor-default"
+                  onClick={(e) => e.preventDefault()}
                 >
                   Privacy Policy
-                </Link>
+                </a>
               </motion.div>
               <motion.div variants={fadeInUp} whileHover={{ y: -2 }}>
-                <Link
-                  to="/disclaimer"
-                  className="hover:text-white transition-colors duration-300"
+                <a
+                  href="#"
+                  className="text-gray-400 hover:text-gray-400 cursor-default"
+                  onClick={(e) => e.preventDefault()}
                 >
                   Legal Disclaimer
-                </Link>
+                </a>
+              </motion.div>
+              <motion.div variants={fadeInUp} whileHover={{ y: -2 }}>
+                <a
+                  href="/"
+                  className="hover:text-white transition-colors duration-300 inline-flex items-center"
+                >
+                  <HiOutlineHome className="mr-1 h-4 w-4" />
+                  Main App
+                </a>
               </motion.div>
             </motion.div>
           </div>

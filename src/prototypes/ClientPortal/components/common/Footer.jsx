@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { HiOutlineHome } from 'react-icons/hi';
 import logoImage from '../../../../assets/PSN-removebg-preview.png';
 
 const Footer = () => {
@@ -57,6 +58,12 @@ const Footer = () => {
                 <li>
                   <Link to="/contact" className="text-gray-300 hover:text-white transition-colors duration-300">Contact Us</Link>
                 </li>
+                <li>
+                  <a href="/" className="text-gray-300 hover:text-white transition-colors duration-300 flex items-center">
+                    <HiOutlineHome className="h-4 w-4 mr-1" />
+                    Return to Main App
+                  </a>
+                </li>
               </ul>
             </div>
             
@@ -86,13 +93,15 @@ const Footer = () => {
             <div>
               <h3 className="text-lg font-medium text-white mb-4">Contact Us</h3>
               <address className="not-italic text-gray-300">
-                <p className="flex items-center mb-2">
-                  <svg className="h-5 w-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <p className="flex items-start mb-2">
+                  <svg className="h-5 w-5 mr-2 text-gray-400 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  123 Legal Street, Suite 300<br />
-                  Anytown, State 12345
+                  <span>
+                    PSN Chambers, cnr Louis Trichardt Boulevard,<br />
+                    President Hoffman St, &, Vanderbijlpark
+                  </span>
                 </p>
                 <p className="flex items-center mb-2">
                   <svg className="h-5 w-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -123,10 +132,14 @@ const Footer = () => {
             <div className="mb-4 md:mb-0 text-sm text-gray-400">
               &copy; {new Date().getFullYear()} PSN Attorneys. All rights reserved.
             </div>
-            <div className="flex space-x-6 text-sm text-gray-400">
+            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400">
               <Link to="/terms" className="hover:text-white transition-colors duration-300">Terms of Service</Link>
               <Link to="/privacy" className="hover:text-white transition-colors duration-300">Privacy Policy</Link>
               <Link to="/disclaimer" className="hover:text-white transition-colors duration-300">Legal Disclaimer</Link>
+              <a href="/" className="hover:text-white transition-colors duration-300 flex items-center">
+                <HiOutlineHome className="h-4 w-4 mr-1" />
+                Main App
+              </a>
             </div>
           </div>
         </div>

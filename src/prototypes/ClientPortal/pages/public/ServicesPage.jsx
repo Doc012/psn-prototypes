@@ -50,37 +50,37 @@ const ServicesPage = () => {
       title: "Family Law",
       description: "We handle divorces, child custody arrangements, adoptions, and other family-related legal matters with compassion and understanding.",
       icon: <HiOutlineUserGroup className="h-8 w-8 text-[#800000]" />,
-      link: "/client-portal/services/family-law"
+      link: "#"
     },
     {
       title: "Corporate Law",
       description: "Our corporate services include company formations, mergers and acquisitions, shareholder agreements, and corporate governance advice.",
       icon: <HiOutlineOfficeBuilding className="h-8 w-8 text-[#800000]" />,
-      link: "/client-portal/services/corporate-law"
+      link: "#"
     },
     {
       title: "Property Law",
       description: "We assist with property transactions, leases, boundary disputes, and all real estate legal matters.",
       icon: <HiOutlineHome className="h-8 w-8 text-[#800000]" />,
-      link: "/client-portal/services/property-law"
+      link: "#"
     },
     {
       title: "Litigation",
       description: "Our experienced litigation team represents clients in court proceedings across a wide range of legal disputes.",
       icon: <HiOutlineScale className="h-8 w-8 text-[#800000]" />,
-      link: "/client-portal/services/litigation"
+      link: "#"
     },
     {
       title: "Commercial Law",
       description: "We provide advice on contracts, business transactions, intellectual property rights, and commercial dispute resolution.",
       icon: <HiOutlineBriefcase className="h-8 w-8 text-[#800000]" />,
-      link: "/client-portal/services/commercial-law"
+      link: "#"
     },
     {
       title: "Estate Planning",
       description: "Our estate planning services include wills, trusts, estate administration, and succession planning.",
       icon: <HiOutlineDatabase className="h-8 w-8 text-[#800000]" />,
-      link: "/client-portal/services/estate-planning"
+      link: "#"
     }
   ];
 
@@ -175,13 +175,14 @@ const ServicesPage = () => {
                       <p className="text-base text-gray-500">{service.description}</p>
                     </div>
                     <div className="mt-6">
-                      <Link 
-                        to={service.link}
+                      <a 
+                        href="#"
                         className="inline-flex items-center text-[#800000] hover:text-[#600000] transition-colors duration-300"
+                        onClick={(e) => e.preventDefault()}
                       >
                         Learn more
                         <HiOutlineArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
+                      </a>
                     </div>
                   </div>
                 </motion.div>
@@ -248,13 +249,14 @@ const ServicesPage = () => {
               </p>
               <div className="mt-8 sm:flex">
                 <div className="rounded-md shadow">
-                  <Link
-                    to="/client-portal/services/international"
+                  <a
+                    href="#"
+                    onClick={(e) => e.preventDefault()}
                     className="flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] transition-colors duration-300"
                   >
                     Learn more
                     <HiOutlineGlobe className="ml-2 h-5 w-5" />
-                  </Link>
+                  </a>
                 </div>
               </div>
             </motion.div>

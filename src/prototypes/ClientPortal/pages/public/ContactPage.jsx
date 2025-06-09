@@ -329,11 +329,10 @@ const ContactPage = () => {
               
               <div className="mt-5 pt-5 border-t border-gray-100">
                 <motion.a 
-                  href="https://calendly.com/psnattorneys/consultation"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="#"
                   className="text-sm text-[#800000] hover:text-[#600000] font-medium flex items-center"
                   whileHover={{ x: 3 }}
+                  onClick={(e) => e.preventDefault()}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -354,20 +353,19 @@ const ContactPage = () => {
               </div>
               <h3 className="mt-4 text-xl font-medium text-gray-900">Office</h3>
               <address className="mt-4 not-italic text-gray-500">
-                <p className="text-lg font-semibold">Sandton Office</p>
+                <p className="text-lg font-semibold">PSN Incorporated</p>
                 <div className="mt-2 space-y-1 text-sm">
                   <motion.p whileHover={{ x: 3 }} className="flex items-center">
                     <HiOutlineOfficeBuilding className="mr-2 h-4 w-4 text-gray-400" />
-                    <span>123 Main Street</span>
+                    <span>cnr Louis Trichardt Boulevard,</span>
                   </motion.p>
-                  <p>Sandton, Johannesburg</p>
-                  <p>2196, South Africa</p>
+                  <p>President Hoffman St, &, Vanderbijlpark</p>
                 </div>
               </address>
               
               <div className="mt-5 pt-5 border-t border-gray-100">
                 <motion.a 
-                  href="https://maps.google.com/?q=Sandton,Johannesburg"
+                  href="https://maps.google.com/?q=PSN+Incorporated+Vanderbijlpark"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-[#800000] hover:text-[#600000] font-medium flex items-center"
@@ -789,7 +787,7 @@ const ContactPage = () => {
               scrolling="no"
               marginHeight="0"
               marginWidth="0"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3578.765557288491!2d28.049600315443!3d-26.235712983411367!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9506a4bd51bb07%3A0xd37ef5d3fca738c7!2sSandton%2C%20Johannesburg%2C%20South%20Africa!5e0!3m2!1sen!2sus!4v1621509700664!5m2!1sen!2sus"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3558.2635496911396!2d27.830966!3d-26.897377!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9459ee789fb5b7%3A0x69fffa7b84cbaf9b!2sVanderbijlpark%2C%20South%20Africa!5e0!3m2!1sen!2sus!4v1623456789012!5m2!1sen!2sus"
               style={{ filter: 'grayscale(1) contrast(1.2) opacity(0.9)' }}
             ></iframe>
             
@@ -797,9 +795,9 @@ const ContactPage = () => {
             <div className="absolute bottom-8 left-8 lg:left-auto lg:right-8 max-w-sm bg-white rounded-lg shadow-xl p-6 border-l-4 border-[#800000]">
               <h3 className="text-lg font-bold text-gray-900">PSN Attorneys</h3>
               <address className="mt-3 not-italic text-gray-600">
-                <p>123 Main Street</p>
-                <p>Sandton, Johannesburg</p>
-                <p>2196, South Africa</p>
+                <p>PSN Incorporated</p>
+                <p>cnr Louis Trichardt Boulevard,</p>
+                <p>President Hoffman St, &, Vanderbijlpark</p>
               </address>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center">
@@ -813,7 +811,7 @@ const ContactPage = () => {
               </div>
               <div className="mt-6">
                 <a
-                  href="https://maps.google.com/?q=Sandton,Johannesburg"
+                  href="https://maps.google.com/?q=PSN+Incorporated+Vanderbijlpark"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#800000] hover:bg-[#600000]"
