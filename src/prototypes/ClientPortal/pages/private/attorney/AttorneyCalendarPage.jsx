@@ -96,6 +96,8 @@ const AttorneyCalendarPage = () => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [showTeamEvents, setShowTeamEvents] = useState(false);
   const [selectedTeamMembers, setSelectedTeamMembers] = useState([]);
+  const [showToast, setShowToast] = useState({ show: false, message: '', type: 'success' });
+  const [tooltipPinned, setTooltipPinned] = useState(false); // New state for tooltip pinning
 
   // Get current year and month for realistic data
   const currentYear = new Date().getFullYear();
@@ -655,10 +657,26 @@ const AttorneyCalendarPage = () => {
     }
   };
 
-  // Handle event click
-  const handleEventClick = (event) => {
+  // Updated event handlers to show tooltips on click rather than opening modal
+  const handleEventClick = (event, e) => {
+    // Prevent event propagation
+    if (e) e.stopPropagation();
+    
+    // Toggle tooltip visibility and pin it
+    if (showTooltipId === event.id) {
+      setShowTooltipId(null);
+      setTooltipPinned(false);
+    } else {
+      setShowTooltipId(event.id);
+      setTooltipPinned(true); // Mark the tooltip as pinned when clicked
+    }
+  };
+
+  // For right-click or menu option to show full details
+  const handleEventDetailsClick = (event) => {
     setSelectedEvent(event);
     setIsEventDetailsOpen(true);
+    setShowTooltipId(null); // Hide any visible tooltip
   };
 
   // Get color for event type
@@ -955,17 +973,29 @@ const AttorneyCalendarPage = () => {
   
   // Get status badge style
   const getStatusBadgeStyle = (status) => {
-    switch (status) {
+    if (!status) return 'bg-gray-100 text-gray-800';
+    
+    // Force lowercase for case-insensitive comparison and trim any whitespace
+    const normalizedStatus = status.toString().toLowerCase().trim();
+    
+    switch (normalizedStatus) {
       case 'confirmed':
         return 'bg-green-100 text-green-800';
       case 'tentative':
         return 'bg-blue-100 text-blue-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-gray-100 text-gray-800';
       case 'cancelled':
+      case 'canceled': // Handle alternative spelling
         return 'bg-red-100 text-red-800';
+      case 'completed':
+      case 'done':     // Handle alternative wording
+        return 'bg-purple-100 text-purple-800';
+      // Additional statuses that might appear in your data
+      case 'rescheduled':
+        return 'bg-orange-100 text-orange-800';
+      case 'in progress':
+        return 'bg-indigo-100 text-indigo-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -1061,6 +1091,14 @@ const AttorneyCalendarPage = () => {
     }
   };
 
+  // Show toast messages
+  const displayToast = (message, type = 'success') => {
+    setShowToast({ show: true, message, type });
+    setTimeout(() => {
+      setShowToast({ show: false, message: '', type: 'success' });
+    }, 3000);
+  };
+
   if (loading) {
     return (
       <div className="py-6">
@@ -1092,7 +1130,7 @@ const AttorneyCalendarPage = () => {
           <h1 className="text-2xl font-semibold text-gray-900">Calendar</h1>
           <div className="mt-4 md:mt-0 flex space-x-2">
             <button
-              onClick={handleAddEvent}
+              onClick={() => displayToast("Event creation coming soon!", "success")}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
               <HiOutlinePlus className="-ml-1 mr-2 h-5 w-5" />
@@ -1153,7 +1191,7 @@ const AttorneyCalendarPage = () => {
                       <li 
                         key={event.id} 
                         className="relative rounded-md border border-gray-200 p-3 hover:shadow-md cursor-pointer transition-shadow"
-                        onClick={() => handleEventClick(event)}
+                        onClick={(e) => handleEventClick(event, e)}
                       >
                         <div className="flex items-start">
                           <div className={`p-2 rounded-md mr-3 ${getEventTypeColor(event.type)}`}>
@@ -1189,7 +1227,7 @@ const AttorneyCalendarPage = () => {
                   </div>
                 )}
                 <div className="mt-4">
-                  <Link to="/attorney/calendar" className="text-[#800000] text-sm font-medium hover:underline flex items-center">
+                  <Link to="/client-portal/attorney/calendar" className="text-[#800000] text-sm font-medium hover:underline flex items-center">
                     View full day
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -1209,7 +1247,7 @@ const AttorneyCalendarPage = () => {
                       <li 
                         key={reminder.id} 
                         className="relative rounded-md border border-gray-200 p-3 hover:shadow-md cursor-pointer transition-shadow"
-                        onClick={() => handleEventClick(reminder)}
+                        onClick={(e) => handleEventClick(reminder, e)}
                       >
                         <div className="flex items-start">
                           <div className={`p-2 rounded-md mr-3 ${getEventTypeColor(reminder.type)}`}>
@@ -1509,14 +1547,96 @@ const AttorneyCalendarPage = () => {
                           {getEventsForDate(day.date).slice(0, 3).map(event => (
                             <div
                               key={event.id}
-                              onClick={() => handleEventClick(event)}
-                              className={`text-xs rounded-md px-2 py-1 cursor-pointer border-l-2 ${getEventBorderColor(event.type)} ${getEventBgColor(event.type, event.isImportant)}`}
-                              title={event.title}
+                              onClick={(e) => handleEventClick(event, e)}
+                              onMouseEnter={() => setShowTooltipId(event.id)}
+                              onMouseLeave={() => {
+                                // Only hide the tooltip on mouse leave if it's not pinned
+                                if (!tooltipPinned) {
+                                  setShowTooltipId(null);
+                                }
+                              }}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                handleEventDetailsClick(event);
+                              }}
+                              className={`text-xs rounded-md px-2 py-1 cursor-pointer border-l-2 relative ${getEventBorderColor(event.type)} ${getEventBgColor(event.type, event.isImportant)}`}
                             >
                               <div className="flex items-center">
                                 {getEventTypeIcon(event.type)}
                                 <span className="ml-1 truncate">{event.title}</span>
                               </div>
+                              
+                              {/* Enhanced tooltip on hover or click - positioned fixed for better visibility */}
+                              {showTooltipId === event.id && (
+                                <div className="fixed z-50 w-72 p-4 bg-white rounded-lg shadow-xl border border-gray-200 text-left"
+                                     style={{ 
+                                       top: `${window.scrollY + 100}px`, 
+                                       left: `50%`, 
+                                       transform: 'translateX(-50%)'
+                                     }}>
+                                  <div className="flex justify-between items-start">
+                                    <h4 className="font-medium text-gray-900 text-base">{event.title}</h4>
+                                    <div className="flex items-center space-x-2">
+                                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeStyle(event.status)}`}>
+                                        {event.status}
+                                      </span>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation(); 
+                                          setShowTooltipId(null);
+                                          setTooltipPinned(false); // Make sure to unpin when explicitly closed
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                      >
+                                        <HiOutlineX className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="mt-2 space-y-2">
+                                    <div className="flex items-center text-gray-600">
+                                      <HiOutlineClock className="h-4 w-4 mr-2" />
+                                      <span>
+                                        {safeFormatDate(event.start, 'EEEE, MMMM d, yyyy')}
+                                        {event.isAllDay ? ' (All day)' : `: ${formatEventTime(event.start)} - ${formatEventTime(event.end)}`}
+                                      </span>
+                                    </div>
+                                    {event.location && (
+                                      <div className="flex items-center text-gray-600">
+                                        <HiOutlineLocationMarker className="h-4 w-4 mr-2" />
+                                        <span>{event.location}</span>
+                                      </div>
+                                    )}
+                                    {event.relatedCase && (
+                                      <div className="flex items-center text-gray-600">
+                                        <HiOutlineOfficeBuilding className="h-4 w-4 mr-2" />
+                                        <span>{event.relatedCase}</span>
+                                      </div>
+                                    )}
+                                    {event.description && (
+                                      <div className="text-gray-600 text-sm">
+                                        <p>{event.description}</p>
+                                      </div>
+                                    )}
+                                    {event.attendees?.length > 0 && (
+                                      <div className="pt-2">
+                                        <div className="text-xs text-gray-500 mb-1">Attendees:</div>
+                                        <div className="flex flex-wrap gap-2">
+                                          {event.attendees.map((attendee) => (
+                                            <div key={attendee.id} className="flex items-center">
+                                              <img 
+                                                src={attendee.avatar} 
+                                                alt={attendee.name}
+                                                className="h-6 w-6 rounded-full"
+                                              />
+                                              <span className="ml-1 text-xs text-gray-700">{attendee.name}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                           {getEventsForDate(day.date).length > 3 && (
@@ -1548,7 +1668,7 @@ const AttorneyCalendarPage = () => {
                         </div>
                         <div className="text-xs text-gray-500">
                           {format(day.date, 'MMM yyyy')}
-                        </div>
+                          </div>
                       </div>
                     ))}
                   </div>
@@ -1556,19 +1676,90 @@ const AttorneyCalendarPage = () => {
                   {/* Time slots and events */}
                   <div className="grid grid-cols-7 divide-x divide-gray-200">
                     {generateWeekDays().map((day, dayIndex) => (
-                      <div key={dayIndex} className={`relative ${day.isWorkDay ? '' : 'bg-gray-50'}`}>
-                        {/* All-day events */}
-                        <div className="min-h-[60px] p-1 border-b border-gray-200">
+                      <div key={dayIndex} className="relative ${day.isWorkDay ? '' : 'bg-gray-50'">
+                        <div className="min-h-60px p-1 border-b border-gray-200">
                           {getAllDayEventsForDate(day.date).map(event => (
                             <div
                               key={event.id}
-                              onClick={() => handleEventClick(event)}
+                              onClick={(e) => handleEventClick(event, e)}
                               className={`text-xs rounded-md px-2 py-1 mb-1 cursor-pointer border-l-2 ${getEventBorderColor(event.type)} ${getEventBgColor(event.type, event.isImportant)}`}
                             >
                               <div className="flex items-center">
                                 {getEventTypeIcon(event.type)}
                                 <span className="ml-1 truncate">{event.title}</span>
                               </div>
+                              
+                              {/* Enhanced tooltip on hover - positioned fixed for better visibility */}
+                              {showTooltipId === event.id && (
+                                <div className="fixed z-50 w-72 p-4 bg-white rounded-lg shadow-xl border border-gray-200 text-left"
+                                     style={{ 
+                                       top: `${window.scrollY + 100}px`, 
+                                       left: `50%`, 
+                                       transform: 'translateX(-50%)'
+                                     }}>
+                                  <div className="flex justify-between items-start">
+                                    <h4 className="font-medium text-gray-900 text-base">{event.title}</h4>
+                                    <div className="flex items-center space-x-2">
+                                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeStyle(event.status)}`}>
+                                        {event.status}
+                                      </span>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation(); 
+                                          setShowTooltipId(null);
+                                          setTooltipPinned(false); // Make sure to unpin when explicitly closed
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                      >
+                                        <HiOutlineX className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="mt-2 space-y-2">
+                                    <div className="flex items-center text-gray-600">
+                                      <HiOutlineClock className="h-4 w-4 mr-2" />
+                                      <span>
+                                        {safeFormatDate(event.start, 'EEEE, MMMM d, yyyy')}
+                                        {event.isAllDay ? ' (All day)' : `: ${formatEventTime(event.start)} - ${formatEventTime(event.end)}`}
+                                      </span>
+                                    </div>
+                                    {event.location && (
+                                      <div className="flex items-center text-gray-600">
+                                        <HiOutlineLocationMarker className="h-4 w-4 mr-2" />
+                                        <span>{event.location}</span>
+                                      </div>
+                                    )}
+                                    {event.relatedCase && (
+                                      <div className="flex items-center text-gray-600">
+                                        <HiOutlineOfficeBuilding className="h-4 w-4 mr-2" />
+                                        <span>{event.relatedCase}</span>
+                                      </div>
+                                    )}
+                                    {event.description && (
+                                      <div className="text-gray-600 text-sm">
+                                        <p>{event.description}</p>
+                                      </div>
+                                    )}
+                                    {event.attendees?.length > 0 && (
+                                      <div className="pt-2">
+                                        <div className="text-xs text-gray-500 mb-1">Attendees:</div>
+                                        <div className="flex flex-wrap gap-2">
+                                          {event.attendees.map((attendee) => (
+                                            <div key={attendee.id} className="flex items-center">
+                                              <img 
+                                                src={attendee.avatar} 
+                                                alt={attendee.name}
+                                                className="h-6 w-6 rounded-full"
+                                              />
+                                              <span className="ml-1 text-xs text-gray-700">{attendee.name}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -1585,8 +1776,15 @@ const AttorneyCalendarPage = () => {
                               {getEventsForHour(day.date, hour).map(event => (
                                 <div
                                   key={event.id}
-                                  onClick={() => handleEventClick(event)}
-                                  className={`absolute inset-x-1 rounded-md px-2 py-1 cursor-pointer text-xs truncate border-l-2 shadow-sm ${getEventBorderColor(event.type)} ${getEventBgColor(event.type, event.isImportant)}`}
+                                  onClick={(e) => handleEventClick(event, e)}
+                                  onMouseEnter={() => setShowTooltipId(event.id)}
+                                  onMouseLeave={() => {
+                                    // Only hide the tooltip on mouse leave if it's not pinned
+                                    if (!tooltipPinned) {
+                                      setShowTooltipId(null);
+                                    }
+                                  }}
+                                  className={`rounded-md px-2 py-1 mb-1 cursor-pointer text-sm border-l-2 shadow-sm ${getEventBorderColor(event.type)} ${getEventBgColor(event.type, event.isImportant)}`}
                                   style={{
                                     top: '2px',
                                     height: 'calc(100% - 4px)',
@@ -1597,6 +1795,78 @@ const AttorneyCalendarPage = () => {
                                     {getEventTypeIcon(event.type)}
                                     <span className="ml-1 truncate font-medium">{event.title}</span>
                                   </div>
+                                  
+                                  {/* Enhanced tooltip on hover - positioned fixed for better visibility */}
+                                  {showTooltipId === event.id && (
+                                    <div className="fixed z-50 w-72 p-4 bg-white rounded-lg shadow-xl border border-gray-200 text-left"
+                                         style={{ 
+                                           top: `${window.scrollY + 100}px`, 
+                                           left: `50%`, 
+                                           transform: 'translateX(-50%)'
+                                         }}>
+                                      <div className="flex justify-between items-start">
+                                        <h4 className="font-medium text-gray-900 text-base">{event.title}</h4>
+                                        <div className="flex items-center space-x-2">
+                                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeStyle(event.status)}`}>
+                                            {event.status}
+                                          </span>
+                                          <button 
+                                            onClick={(e) => {
+                                              e.stopPropagation(); 
+                                              setShowTooltipId(null);
+                                              setTooltipPinned(false); // Make sure to unpin when explicitly closed
+                                            }}
+                                            className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                          >
+                                            <HiOutlineX className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <div className="mt-2 space-y-2">
+                                        <div className="flex items-center text-gray-600">
+                                          <HiOutlineClock className="h-4 w-4 mr-2" />
+                                          <span>
+                                            {safeFormatDate(event.start, 'EEEE, MMMM d, yyyy')}
+                                            {event.isAllDay ? ' (All day)' : `: ${formatEventTime(event.start)} - ${formatEventTime(event.end)}`}
+                                          </span>
+                                        </div>
+                                        {event.location && (
+                                          <div className="flex items-center text-gray-600">
+                                            <HiOutlineLocationMarker className="h-4 w-4 mr-2" />
+                                            <span>{event.location}</span>
+                                          </div>
+                                        )}
+                                        {event.relatedCase && (
+                                          <div className="flex items-center text-gray-600">
+                                            <HiOutlineOfficeBuilding className="h-4 w-4 mr-2" />
+                                            <span>{event.relatedCase}</span>
+                                          </div>
+                                        )}
+                                        {event.description && (
+                                          <div className="text-gray-600 text-sm">
+                                            <p>{event.description}</p>
+                                          </div>
+                                        )}
+                                        {event.attendees?.length > 0 && (
+                                          <div className="pt-2">
+                                            <div className="text-xs text-gray-500 mb-1">Attendees:</div>
+                                            <div className="flex flex-wrap gap-2">
+                                              {event.attendees.map((attendee) => (
+                                                <div key={attendee.id} className="flex items-center">
+                                                  <img 
+                                                    src={attendee.avatar} 
+                                                    alt={attendee.name}
+                                                    className="h-6 w-6 rounded-full"
+                                                  />
+                                                  <span className="ml-1 text-xs text-gray-700">{attendee.name}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -1624,13 +1894,72 @@ const AttorneyCalendarPage = () => {
                         {getAllDayEventsForDate(currentDate).map(event => (
                           <div
                             key={event.id}
-                            onClick={() => handleEventClick(event)}
+                            onClick={(e) => handleEventClick(event, e)}
+                            onMouseEnter={() => setShowTooltipId(event.id)}
+                            onMouseLeave={() => {
+                              // Only hide the tooltip on mouse leave if it's not pinned
+                              if (!tooltipPinned) {
+                                setShowTooltipId(null);
+                              }
+                            }}
                             className={`text-xs rounded-md px-2 py-1 mb-1 cursor-pointer border-l-2 ${getEventBorderColor(event.type)} ${getEventBgColor(event.type, event.isImportant)}`}
                           >
                             <div className="flex items-center">
                               {getEventTypeIcon(event.type)}
                               <span className="ml-1 truncate">{event.title}</span>
                             </div>
+                            
+                            {/* Enhanced tooltip on hover */}
+                            {showTooltipId === event.id && (
+                              <div className="fixed z-50 w-72 p-4 bg-white rounded-lg shadow-xl border border-gray-200 text-left"
+                                   style={{ 
+                                     top: `${window.scrollY + 100}px`, 
+                                     left: `50%`, 
+                                     transform: 'translateX(-50%)'
+                                   }}>
+                                <div className="flex justify-between items-start">
+                                  <h4 className="font-medium text-gray-900 text-base">{event.title}</h4>
+                                  <div className="flex items-center space-x-2">
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeStyle(event.status)}`}>
+                                      {event.status}
+                                    </span>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation(); 
+                                        setShowTooltipId(null);
+                                        setTooltipPinned(false); // Make sure to unpin when explicitly closed
+                                      }}
+                                      className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                    >
+                                      <HiOutlineX className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="mt-2 space-y-2">
+                                  <div className="flex items-center text-gray-600">
+                                    <HiOutlineClock className="h-4 w-4 mr-2" />
+                                    <span>All day</span>
+                                  </div>
+                                  {event.location && (
+                                    <div className="flex items-center text-gray-600">
+                                      <HiOutlineLocationMarker className="h-4 w-4 mr-2" />
+                                      <span>{event.location}</span>
+                                    </div>
+                                  )}
+                                  {event.relatedCase && (
+                                    <div className="flex items-center text-gray-600">
+                                      <HiOutlineOfficeBuilding className="h-4 w-4 mr-2" />
+                                      <span>{event.relatedCase}</span>
+                                    </div>
+                                  )}
+                                  {event.description && (
+                                    <div className="text-gray-600 text-sm">
+                                      <p>{event.description}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                         {getAllDayEventsForDate(currentDate).length === 0 && (
@@ -1650,7 +1979,7 @@ const AttorneyCalendarPage = () => {
                         {getEventsForHour(currentDate, hour).map(event => (
                           <div
                             key={event.id}
-                            onClick={() => handleEventClick(event)}
+                            onClick={(e) => handleEventClick(event, e)}
                             className={`rounded-md px-2 py-1 mb-1 cursor-pointer text-sm border-l-2 shadow-sm ${getEventBorderColor(event.type)} ${getEventBgColor(event.type, event.isImportant)}`}
                           >
                             <div className="flex justify-between items-start">
@@ -1666,6 +1995,78 @@ const AttorneyCalendarPage = () => {
                               <div className="mt-1 flex items-center text-xs text-gray-500">
                                 <HiOutlineLocationMarker className="mr-1 h-3 w-3" />
                                 <span className="truncate">{event.location}</span>
+                              </div>
+                            )}
+                            
+                            {/* Enhanced tooltip on hover */}
+                            {showTooltipId === event.id && (
+                              <div className="fixed z-50 w-72 p-4 bg-white rounded-lg shadow-xl border border-gray-200 text-left"
+                                   style={{ 
+                                     top: `${window.scrollY + 100}px`, 
+                                     left: `50%`, 
+                                     transform: 'translateX(-50%)'
+                                   }}>
+                                <div className="flex justify-between items-start">
+                                  <h4 className="font-medium text-gray-900 text-base">{event.title}</h4>
+                                  <div className="flex items-center space-x-2">
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeStyle(event.status)}`}>
+                                      {event.status}
+                                    </span>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation(); 
+                                        setShowTooltipId(null);
+                                        setTooltipPinned(false); // Make sure to unpin when explicitly closed
+                                      }}
+                                      className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                    >
+                                      <HiOutlineX className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="mt-2 space-y-2">
+                                  <div className="flex items-center text-gray-600">
+                                    <HiOutlineClock className="h-4 w-4 mr-2" />
+                                    <span>
+                                      {safeFormatDate(event.start, 'EEEE, MMMM d, yyyy')}
+                                      {event.isAllDay ? ' (All day)' : `: ${formatEventTime(event.start)} - ${formatEventTime(event.end)}`}
+                                    </span>
+                                  </div>
+                                  {event.location && (
+                                    <div className="flex items-center text-gray-600">
+                                      <HiOutlineLocationMarker className="h-4 w-4 mr-2" />
+                                      <span>{event.location}</span>
+                                    </div>
+                                  )}
+                                  {event.relatedCase && (
+                                    <div className="flex items-center text-gray-600">
+                                      <HiOutlineOfficeBuilding className="h-4 w-4 mr-2" />
+                                      <span>{event.relatedCase}</span>
+                                    </div>
+                                  )}
+                                  {event.description && (
+                                    <div className="text-gray-600 text-sm mt-2">
+                                      <p>{event.description}</p>
+                                    </div>
+                                  )}
+                                  {event.attendees?.length > 0 && (
+                                    <div className="pt-2">
+                                      <div className="text-xs text-gray-500 mb-1">Attendees:</div>
+                                      <div className="flex flex-wrap gap-2">
+                                        {event.attendees.map((attendee) => (
+                                          <div key={attendee.id} className="flex items-center">
+                                            <img 
+                                              src={attendee.avatar} 
+                                              alt={attendee.name}
+                                              className="h-6 w-6 rounded-full"
+                                            />
+                                            <span className="ml-1 text-xs text-gray-700">{attendee.name}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -1697,7 +2098,14 @@ const AttorneyCalendarPage = () => {
                       <div
                         key={event.id}
                         onClick={() => handleEventClick(event)}
-                        className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                        onMouseEnter={() => setShowTooltipId(event.id)}
+                        onMouseLeave={() => {
+                          // Only hide the tooltip on mouse leave if it's not pinned
+                          if (!tooltipPinned) {
+                            setShowTooltipId(null);
+                          }
+                        }}
+                        className="p-4 hover:bg-gray-50 cursor-pointer transition-colors relative"
                       >
                         <div className="flex items-start">
                           <div className={`p-2 rounded-md mr-3 ${getEventTypeColor(event.type)}`}>
@@ -1753,6 +2161,78 @@ const AttorneyCalendarPage = () => {
                             )}
                           </div>
                         </div>
+                        
+                        {/* Enhanced tooltip on hover */}
+                        {showTooltipId === event.id && (
+                          <div className="fixed z-50 w-72 p-4 bg-white rounded-lg shadow-xl border border-gray-200 text-left"
+                               style={{ 
+                                 top: `${window.scrollY + 100}px`, 
+                                 left: `50%`, 
+                                 transform: 'translateX(-50%)'
+                               }}>
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-gray-900 text-base">{event.title}</h4>
+                              <div className="flex items-center space-x-2">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeStyle(event.status)}`}>
+                                  {event.status}
+                                </span>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation(); 
+                                    setShowTooltipId(null);
+                                    setTooltipPinned(false); // Make sure to unpin when explicitly closed
+                                  }}
+                                  className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                >
+                                  <HiOutlineX className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              <div className="flex items-center text-gray-600">
+                                <HiOutlineClock className="h-4 w-4 mr-2" />
+                                <span>
+                                  {safeFormatDate(event.start, 'EEEE, MMMM d, yyyy')}
+                                  {event.isAllDay ? ' (All day)' : `: ${formatEventTime(event.start)} - ${formatEventTime(event.end)}`}
+                                </span>
+                              </div>
+                              {event.location && (
+                                <div className="flex items-center text-gray-600">
+                                  <HiOutlineLocationMarker className="h-4 w-4 mr-2" />
+                                  <span>{event.location}</span>
+                                </div>
+                              )}
+                              {event.relatedCase && (
+                                <div className="flex items-center text-gray-600">
+                                  <HiOutlineOfficeBuilding className="h-4 w-4 mr-2" />
+                                  <span>{event.relatedCase}</span>
+                                </div>
+                              )}
+                              {event.description && (
+                                <div className="text-gray-600 text-sm mt-2">
+                                  <p>{event.description}</p>
+                                </div>
+                              )}
+                              {event.attendees?.length > 0 && (
+                                <div className="pt-2">
+                                  <div className="text-xs text-gray-500 mb-1">Attendees:</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {event.attendees.map((attendee) => (
+                                      <div key={attendee.id} className="flex items-center">
+                                        <img 
+                                          src={attendee.avatar} 
+                                          alt={attendee.name}
+                                          className="h-6 w-6 rounded-full"
+                                        />
+                                        <span className="ml-1 text-xs text-gray-700">{attendee.name}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
@@ -1779,6 +2259,22 @@ const AttorneyCalendarPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Toast notification */}
+      {showToast.show && (
+        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-md shadow-lg ${
+          showToast.type === 'success' ? 'bg-green-50 text-green-800' : 
+          showToast.type === 'error' ? 'bg-red-50 text-red-800' : 
+          'bg-blue-50 text-blue-800'
+        } transition-opacity z-50`}>
+          <p className="flex items-center text-sm font-medium">
+            {showToast.type === 'success' && <HiOutlineCheck className="mr-2 h-5 w-5" />}
+            {showToast.type === 'error' && <HiOutlineExclamation className="mr-2 h-5 w-5" />}
+            {showToast.type === 'info' && <HiOutlineInformationCircle className="mr-2 h-5 w-5" />}
+            {showToast.message}
+          </p>
+        </div>
+      )}
 
       {/* Event Details Modal */}
       <Transition.Root show={isEventDetailsOpen} as={Fragment}>

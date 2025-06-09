@@ -18,7 +18,8 @@ import {
   HiOutlineCheck,
   HiOutlineRefresh,
   HiOutlineCog,
-  HiOutlineColorSwatch
+  HiOutlineColorSwatch,
+  HiOutlineMail // Add this missing icon
 } from 'react-icons/hi';
 
 const AttorneyDashboardPage = () => {
@@ -466,7 +467,7 @@ const AttorneyDashboardPage = () => {
               </div>
               <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/cases" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/cases" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     View all cases
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -492,7 +493,7 @@ const AttorneyDashboardPage = () => {
               </div>
               <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/clients" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/clients" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     View all clients
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -518,7 +519,7 @@ const AttorneyDashboardPage = () => {
               </div>
               <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/documents/pending" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/documents" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     Review documents
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -544,7 +545,7 @@ const AttorneyDashboardPage = () => {
               </div>
               <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/calendar" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/calendar" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     View calendar
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -579,7 +580,7 @@ const AttorneyDashboardPage = () => {
               </div>
               <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/time-tracking" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/time-tracking" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     Track time
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -611,7 +612,7 @@ const AttorneyDashboardPage = () => {
               </div>
               <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/billing" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/billing" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     View billing
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -721,7 +722,7 @@ const AttorneyDashboardPage = () => {
                               </button>
                             </div>
                             <Link
-                              to={`/cases/${caseItem.id}`}
+                              to={`/client-portal/attorney/cases`}
                               className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                             >
                               View Details
@@ -735,7 +736,7 @@ const AttorneyDashboardPage = () => {
               </ul>
               <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/cases" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/cases" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     View all cases
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -773,7 +774,7 @@ const AttorneyDashboardPage = () => {
                           </p>
                           <div className="mt-1 flex items-center text-xs text-gray-500">
                             <Link 
-                              to={`/cases/${activity.caseId}`}
+                              to={`/client-portal/attorney/cases`}
                               className="font-medium text-[#800000] hover:text-[#600000] truncate"
                             >
                               {activity.caseName}
@@ -791,7 +792,7 @@ const AttorneyDashboardPage = () => {
               </ul>
               <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/activity" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/dashboard" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     View all activity
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -806,7 +807,7 @@ const AttorneyDashboardPage = () => {
                   <HiOutlineCalendar className="mr-2 h-5 w-5 text-gray-500" />
                   Upcoming Deadlines
                 </h3>
-                <Link to="/calendar" className="text-sm text-[#800000] hover:text-[#600000]">
+                <Link to="/client-portal/attorney/calendar" className="text-sm text-[#800000] hover:text-[#600000]">
                   View calendar
                 </Link>
               </div>
@@ -827,7 +828,7 @@ const AttorneyDashboardPage = () => {
                             <p className="text-sm font-medium text-gray-900">{deadline.title}</p>
                             <div className="mt-1 flex items-center text-xs text-gray-500">
                               <Link 
-                                to={`/cases/${deadline.caseId}`}
+                                to={`/client-portal/attorney/cases`}
                                 className="font-medium text-[#800000] hover:text-[#600000]"
                               >
                                 {deadline.caseName}
@@ -853,7 +854,7 @@ const AttorneyDashboardPage = () => {
               </ul>
               <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/calendar" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/calendar" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     View all deadlines
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -908,14 +909,14 @@ const AttorneyDashboardPage = () => {
                           <div className="mt-2 flex justify-between">
                             <div className="text-xs text-gray-500">
                               <Link 
-                                to={`/cases/${message.caseId}`}
+                                to={`/client-portal/attorney/cases`}
                                 className="font-medium text-[#800000] hover:text-[#600000]"
                               >
                                 {message.caseName}
                               </Link>
                             </div>
                             <Link 
-                              to={`/messages/${message.id}`}
+                              to={`/client-portal/attorney/messages`}
                               className="text-xs font-medium text-[#800000] hover:text-[#600000] flex items-center"
                             >
                               Reply
@@ -930,7 +931,7 @@ const AttorneyDashboardPage = () => {
               </ul>
               <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
                 <div className="text-sm">
-                  <Link to="/messages" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
+                  <Link to="/client-portal/attorney/messages" className="font-medium text-[#800000] hover:text-[#600000] flex items-center">
                     View all messages
                     <HiChevronRight className="ml-1 h-4 w-4" />
                   </Link>

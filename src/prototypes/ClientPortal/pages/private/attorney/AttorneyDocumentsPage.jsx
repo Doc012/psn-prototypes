@@ -91,6 +91,9 @@ const AttorneyDocumentsPage = () => {
   
   const fileInputRef = useRef(null);
   
+  // Add a success message state for toast notifications
+  const [successMessage, setSuccessMessage] = useState('');
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -666,6 +669,122 @@ const AttorneyDocumentsPage = () => {
     }
   };
   
+  // Handle upload button click - simplified version without modal
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      // Trigger the hidden file input
+      fileInputRef.current.click();
+    } else {
+      // Fallback if ref is not available
+      setSuccessMessage("Upload functionality is not available. Please try again.");
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  };
+
+  // Add this function to handle file selection
+  const handleFileSelect = (e) => {
+    const files = e.target.files;
+    if (files.length > 0) {
+      setFilesToUpload(files);
+      setSuccessMessage(`${files.length} file(s) selected for upload`);
+      
+      // Simulate upload progress
+      setUploadProgress(0);
+      setUploadingStatus('uploading');
+      
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        setUploadProgress(progress);
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          
+          // Create new document objects
+          const newDocs = Array.from(files).map((file, index) => {
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            let fileType = fileExt;
+            
+            // Normalize file types
+            if (['doc', 'docx'].includes(fileExt)) fileType = 'docx';
+            if (['xls', 'xlsx'].includes(fileExt)) fileType = 'xlsx';
+            if (['ppt', 'pptx'].includes(fileExt)) fileType = 'pptx';
+            
+            return {
+              id: `doc${Date.now()}-${index}`,
+              name: file.name,
+              folderId: currentFolder ? currentFolder.id : null,
+              type: fileType,
+              size: `${Math.round(file.size / 1024)} KB`,
+              createdAt: new Date().toISOString(),
+              modifiedAt: new Date().toISOString(),
+              createdBy: user?.displayName || 'Current User',
+              clientId: selectedClient,
+              caseId: selectedCase,
+              isShared: false,
+              sharedWith: [],
+              status: 'draft',
+              starred: false,
+              tags: []
+            };
+          });
+          
+          // Add the new documents
+          setDocuments(prev => [...prev, ...newDocs]);
+          setUploadingStatus('success');
+          setSuccessMessage(`${files.length} file(s) uploaded successfully!`);
+          
+          // Reset the file input
+          e.target.value = null;
+          
+          setTimeout(() => {
+            setUploadingStatus('idle');
+            setSuccessMessage('');
+          }, 3000);
+        }
+      }, 300);
+    }
+  };
+  
+  // Replace the handleCreateFolderClick function with this simpler version
+  const handleCreateFolderClick = () => {
+    // Use the browser's built-in prompt for folder name
+    const folderName = prompt("Enter a name for your new folder:", "");
+    
+    if (folderName && folderName.trim()) {
+      // Create new folder object
+      const folder = {
+        id: `folder${Date.now()}`,
+        name: folderName.trim(),
+        parentId: currentFolder ? currentFolder.id : null,
+        clientId: selectedClient,
+        caseId: selectedCase,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Add the new folder to the folders list
+      setFolders(prev => [...prev, folder]);
+      
+      // Show success message
+      setSuccessMessage(`Folder "${folderName.trim()}" created successfully!`);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    }
+  };
+  
+  // Add hidden file input element to the return statement, just before the closing div
+  // Add this right before the final closing </div> in the component return
+  <input
+    type="file"
+    ref={fileInputRef}
+    onChange={handleFileSelect}
+    multiple
+    className="hidden"
+  />
+  
   // Render loading state
   if (loading) {
     return (
@@ -686,6 +805,19 @@ const AttorneyDocumentsPage = () => {
   
   return (
     <div className="py-6">
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 rounded-md shadow-md p-4 flex items-center transition-all duration-300 ease-in-out">
+          <HiOutlineCheckCircle className="h-5 w-5 text-green-500 mr-2" />
+          <span>{successMessage}</span>
+          <button
+            onClick={() => setSuccessMessage('')}
+            className="ml-4 text-green-600 hover:text-green-800"
+          >
+            <HiOutlineX className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex-1 min-w-0">
@@ -700,7 +832,7 @@ const AttorneyDocumentsPage = () => {
           <div className="mt-4 flex md:mt-0 md:ml-4 space-x-2">
             <button
               type="button"
-              onClick={() => setShowUploadModal(true)}
+              onClick={handleUploadClick}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
               <HiOutlineUpload className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -708,7 +840,7 @@ const AttorneyDocumentsPage = () => {
             </button>
             <button
               type="button"
-              onClick={() => setShowCreateFolderModal(true)}
+              onClick={handleCreateFolderClick}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
               <HiOutlineFolderAdd className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -1463,225 +1595,93 @@ const AttorneyDocumentsPage = () => {
           </div>
         </div>
       </div>
-    
-    {/* Create Folder Modal */}
-    {/* Upload Modal */}
-    <Transition.Root show={showUploadModal} as={Fragment}>
-      <Dialog as="div" className="fixed z-10 inset-0 overflow-y-auto" onClose={setShowUploadModal}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <Dialog.Overlay className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-          </Transition.Child>
+      
+      {/* Create Folder Modal */}
+      <Transition appear show={showCreateFolderModal} as={Fragment}>
+        <Dialog 
+          as="div" 
+          className="fixed inset-0 z-10 overflow-y-auto" 
+          onClose={() => setShowCreateFolderModal(false)}
+        >
+          <div className="min-h-screen px-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+            </Transition.Child>
 
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            enterTo="opacity-100 translate-y-0 sm:scale-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-          >
-            <div className="bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full sm:p-6">
-              <div>
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-[#800000] text-white">
-                  <HiOutlineCloudUpload className="h-6 w-6" />
-                </div>
-                <div className="mt-3 text-center sm:mt-5">
-                  <Dialog.Title as="h3" className="text-lg leading-6 font-medium text-gray-900">
-                    Upload Documents
-                  </Dialog.Title>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">
-                      Select files to upload to the current folder.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-5 sm:mt-6 space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
-                  {filesToUpload.length > 0 ? (
-                    <div className="space-y-2">
-                      {Array.from(filesToUpload).map((file, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <HiOutlineDocumentText className="h-5 w-5 text-gray-400 mr-2" />
-                            <span className="text-sm font-medium text-gray-900">{file.name}</span>
-                          </div>
-                          <span className="text-sm text-gray-500">{(file.size / 1024).toFixed(0)} KB</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <svg 
-                        className="mx-auto h-12 w-12 text-gray-400" 
-                        stroke="currentColor" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        aria-hidden="true"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="2" 
-                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
-                        />
-                      </svg>
-                      <div className="flex text-sm text-gray-600 justify-center">
-                        <label 
-                          htmlFor="file-upload" 
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-[#800000] hover:text-[#600000] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#800000]"
-                        >
-                          <span>Upload a file</span>
-                          <input
-                            id="file-upload"
-                            name="file-upload"
-                            type="file"
-                            className="sr-only"
-                            multiple
-                            onChange={(e) => setFilesToUpload(e.target.files)}
-                            ref={fileInputRef}
-                          />
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        PDF, Word, Excel, or PowerPoint up to 10MB
-                      </p>
-                    </div>
-                  )}
+            {/* This element is to trick the browser into centering the modal contents. */}
+            <span
+              className="inline-block h-screen align-middle"
+              aria-hidden="true"
+            >
+              &#8203;
+            </span>
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                <Dialog.Title
+                  as="h3"
+                  className="text-lg font-medium leading-6 text-gray-900"
+                >
+                  Create New Folder
+                </Dialog.Title>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Enter a name for your new folder in {currentFolder ? `"${currentFolder.name}"` : 'root directory'}.
+                  </p>
                 </div>
 
-                {uploadingStatus === 'uploading' && (
-                  <div>
-                    <div className="flex justify-between text-sm font-medium text-gray-900">
-                      <span>Uploading...</span>
-                      <span>{uploadProgress}%</span>
-                    </div>
-                    <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-[#800000] h-2 rounded-full"
-                        style={{ width: `${uploadProgress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
+                <div className="mt-4">
+                  <label htmlFor="folder-name" className="block text-sm font-medium text-gray-700">
+                    Folder Name
+                  </label>
+                  <input
+                    type="text"
+                    id="folder-name"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
+                    value={newFolder.name}
+                    onChange={(e) => setNewFolder({...newFolder, name: e.target.value})}
+                    autoFocus
+                    placeholder="Enter folder name"
+                  />
+                </div>
 
-                {uploadingStatus === 'success' && (
-                  <div className="flex items-center text-sm font-medium text-green-600">
-                    <HiOutlineCheckCircle className="h-5 w-5 mr-2" />
-                    Files uploaded successfully!
-                  </div>
-                )}
-
-                {uploadingStatus === 'error' && (
-                  <div className="flex items-center text-sm font-medium text-red-600">
-                    <HiOutlineExclamation className="h-5 w-5 mr-2" />
-                    Error uploading files. Please try again.
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
+                <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
-                    className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#800000] text-base font-medium text-white hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] sm:text-sm"
-                    onClick={handleFileUpload}
-                    disabled={filesToUpload.length === 0 || uploadingStatus === 'uploading'}
-                  >
-                    {uploadingStatus === 'uploading' ? 'Uploading...' : 'Upload'}
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] sm:text-sm"
-                    onClick={() => {
-                      setShowUploadModal(false);
-                      setFilesToUpload([]);
-                      setUploadProgress(0);
-                      setUploadingStatus('idle');
-                    }}
+                    className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                    onClick={() => setShowCreateFolderModal(false)}
                   >
                     Cancel
                   </button>
+                  <button
+                    type="button"
+                    className={`inline-flex justify-center px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md ${newFolder.name.trim() ? 'bg-[#800000] hover:bg-[#600000]' : 'bg-gray-300 cursor-not-allowed'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]`}
+                    onClick={handleCreateFolder}
+                    disabled={!newFolder.name.trim()}
+                  >
+                    Create Folder
+                  </button>
                 </div>
               </div>
-            </div>
-          </Transition.Child>
-        </div>
-      </Dialog>
-    </Transition.Root>
-    
-    {/* Delete Confirmation Modal */}
-    <Transition.Root show={showDeleteModal} as={Fragment}>
-      <Dialog as="div" className="fixed z-10 inset-0 overflow-y-auto" onClose={setShowDeleteModal}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <Dialog.Overlay className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-          </Transition.Child>
-
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            enterTo="opacity-100 translate-y-0 sm:scale-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-          >
-            <div className="bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full sm:p-6">
-              <div className="sm:flex sm:items-start">
-                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                  <HiOutlineExclamation className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                  <Dialog.Title as="h3" className="text-lg leading-6 font-medium text-gray-900">
-                    Delete {selectedDocuments.length === 1 ? 'Document' : 'Documents'}
-                  </Dialog.Title>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">
-                      Are you sure you want to delete {selectedDocuments.length === 1 ? 'this document' : `these ${selectedDocuments.length} documents`}? This action cannot be undone.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={handleDeleteDocuments}
-                >
-                  Delete
-                </button>
-                <button
-                  type="button"
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] sm:mt-0 sm:w-auto sm:text-sm"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </Transition.Child>
-        </div>
-      </Dialog>
-    </Transition.Root>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 };

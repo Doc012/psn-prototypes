@@ -78,6 +78,7 @@ const AttorneyTimeTrackingPage = () => {
   const [reportData, setReportData] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   const filterRef = useRef(null);
 
@@ -751,6 +752,13 @@ const AttorneyTimeTrackingPage = () => {
     setIsReportModalOpen(true);
   };
 
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'success' });
+    }, 3000);
+  };
+
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
@@ -767,7 +775,7 @@ const AttorneyTimeTrackingPage = () => {
           <div className="mt-4 flex md:mt-0 md:ml-4">
             <button
               type="button"
-              onClick={() => setIsEntryModalOpen(true)}
+              onClick={() => showToast("New Time Entry functionality coming soon!", "success")}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
               <HiOutlinePlus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -1507,7 +1515,7 @@ const AttorneyTimeTrackingPage = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleViewReport('time')}
+                      onClick={() => showToast("Time Summary report coming soon!", "success")}
                       className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     >
                       <HiOutlineEye className="mr-1.5 h-4 w-4" />
@@ -1532,7 +1540,7 @@ const AttorneyTimeTrackingPage = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleViewReport('billing')}
+                      onClick={() => showToast("Billing Summary report coming soon!", "success")}
                       className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     >
                       <HiOutlineEye className="mr-1.5 h-4 w-4" />
@@ -1557,7 +1565,7 @@ const AttorneyTimeTrackingPage = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleViewReport('detailed')}
+                      onClick={() => showToast("Detailed Time report coming soon!", "success")}
                       className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     >
                       <HiOutlineEye className="mr-1.5 h-4 w-4" />
@@ -1671,7 +1679,7 @@ const AttorneyTimeTrackingPage = () => {
               enterFrom="translate-y-4 opacity-0"
               enterTo="translate-y-0 opacity-100"
               leave="ease-in duration-200"
-                           leaveFrom="translate-y-0 opacity-100"
+              leaveFrom="translate-y-0 opacity-100"
               leaveTo="translate-y-4 opacity-0"
             >
               <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-md">
@@ -2227,6 +2235,21 @@ const AttorneyTimeTrackingPage = () => {
           </div>
         </Dialog>
       </Transition.Root>
+
+      {toast.show && (
+        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-md shadow-md ${
+          toast.type === 'success' ? 'bg-green-50 text-green-800' : 
+          toast.type === 'error' ? 'bg-red-50 text-red-800' : 
+          'bg-blue-50 text-blue-800'
+        }`}>
+          <p className="flex items-center text-sm font-medium">
+            {toast.type === 'success' && <HiOutlineCheck className="mr-2 h-5 w-5" />}
+            {toast.type === 'error' && <HiOutlineExclamation className="mr-2 h-5 w-5" />}
+            {toast.type === 'info' && <HiOutlineInformationCircle className="mr-2 h-5 w-5" />}
+            {toast.message}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

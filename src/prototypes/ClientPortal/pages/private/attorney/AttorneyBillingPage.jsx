@@ -31,6 +31,9 @@ import {
 import { format, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, addDays, subDays } from 'date-fns';
 
 const AttorneyBillingPage = () => {
+  // Add toast notification state
+  const [toast, setToast] = useState(null);
+
   // State
   const [activeTab, setActiveTab] = useState('invoices');
   const [loading, setLoading] = useState(true);
@@ -54,6 +57,16 @@ const AttorneyBillingPage = () => {
   const [reportData, setReportData] = useState(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isCustomReportModalOpen, setIsCustomReportModalOpen] = useState(false);
+  const [customReportOptions, setCustomReportOptions] = useState({
+    startDate: format(new Date(), 'yyyy-MM-dd'),
+    endDate: format(new Date(), 'yyyy-MM-dd'),
+    clientIds: [],
+    reportType: 'billing',
+    includeDetails: true,
+    includeSummary: true,
+    format: 'pdf'
+  });
   
   // New invoice state
   const [newInvoice, setNewInvoice] = useState({
@@ -733,236 +746,244 @@ const AttorneyBillingPage = () => {
 
   // Generate report data for different report types
   const generateReport = (reportType) => {
-    setLoading(true);
+    setActiveReport(reportType);
     
-    setTimeout(() => {
-      let data = null;
-      
-      if (reportType === 'aging') {
-        // Client A/R Aging Report
-        data = {
-          title: 'Client A/R Aging Report',
-          date: format(new Date(), 'MMMM d, yyyy'),
-          summary: {
-            total: invoices.filter(inv => inv.status !== 'paid' && inv.status !== 'draft').reduce((sum, inv) => sum + inv.amount, 0),
-            current: invoices.filter(inv => {
-              if (inv.status !== 'paid' && inv.status !== 'draft') {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff <= 0;
-              }
-              return false;
-            }).reduce((sum, inv) => sum + inv.amount, 0),
-            days30: invoices.filter(inv => {
-              if (inv.status !== 'paid' && inv.status !== 'draft') {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff > 0 && daysDiff <= 30;
-              }
-              return false;
-            }).reduce((sum, inv) => sum + inv.amount, 0),
-            days60: invoices.filter(inv => {
-              if (inv.status !== 'paid' && inv.status !== 'draft') {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff > 30 && daysDiff <= 60;
-              }
-              return false;
-            }).reduce((sum, inv) => sum + inv.amount, 0),
-            days90: invoices.filter(inv => {
-              if (inv.status !== 'paid' && inv.status !== 'draft') {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff > 60 && daysDiff <= 90;
-              }
-              return false;
-            }).reduce((sum, inv) => sum + inv.amount, 0),
-            days90plus: invoices.filter(inv => {
-              if (inv.status !== 'paid' && inv.status !== 'draft') {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff > 90;
-              }
-              return false;
-            }).reduce((sum, inv) => sum + inv.amount, 0),
+    // Generate mock report data based on the type
+    if (reportType === 'aging') {
+      setReportData({
+        title: 'Client A/R Aging Report',
+        date: format(new Date(), 'MMMM d, yyyy'),
+        summary: {
+          total: 157350,
+          current: 45250,
+          days30: 42300,
+          days60: 35800,
+          days90: 21500,
+          days90plus: 12500
+        },
+        clients: [
+          {
+            id: 'c1',
+            name: 'Nkosi Family Trust',
+            total: 42500,
+            collected: 28000,
+            outstanding: 14500,
+            current: 8500,
+            days30: 6000,
+            days60: 0,
+            days90: 0,
+            days90plus: 0
           },
-          clients: clients.map(client => {
-            const clientInvoices = invoices.filter(inv => inv.clientId === client.id && inv.status !== 'paid' && inv.status !== 'draft');
-            
-            if (clientInvoices.length === 0) return null;
-            
-            // Calculate total collected for this client
-            const collected = payments
-              .filter(payment => payment.clientId === client.id)
-              .reduce((sum, payment) => sum + payment.amount, 0);
-            
-            // Calculate total outstanding (all unpaid invoices)
-            const outstanding = clientInvoices.reduce((sum, inv) => sum + inv.amount, 0);
-            
-            return {
-              id: client.id,
-              name: client.name,
-              total: clientInvoices.reduce((sum, inv) => sum + inv.amount, 0) + collected,
-              collected: collected,
-              outstanding: outstanding,
-              current: clientInvoices.filter(inv => {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff <= 0;
-              }).reduce((sum, inv) => sum + inv.amount, 0),
-              days30: clientInvoices.filter(inv => {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff > 0 && daysDiff <= 30;
-              }).reduce((sum, inv) => sum + inv.amount, 0),
-              days60: clientInvoices.filter(inv => {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff > 30 && daysDiff <= 60;
-              }).reduce((sum, inv) => sum + inv.amount, 0),
-              days90: clientInvoices.filter(inv => {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff > 60 && daysDiff <= 90;
-              }).reduce((sum, inv) => sum + inv.amount, 0),
-              days90plus: clientInvoices.filter(inv => {
-                const dueDate = parseISO(inv.dueDate);
-                const now = new Date();
-                const daysDiff = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
-                return daysDiff > 90;
-              }).reduce((sum, inv) => sum + inv.amount, 0)
-            };
-          }).filter(Boolean)
-        };
-      } else if (reportType === 'revenue') {
-        // Revenue Summary Report
-        data = {
-          title: 'Revenue Summary Report',
-          date: format(new Date(), 'MMMM d, yyyy'),
-          period: 'January 2025 - June 2025',
-          summary: {
-            totalBilled: invoices.reduce((sum, inv) => sum + inv.amount, 0),
-            totalPaid: invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.amount, 0),
-            totalOutstanding: invoices.filter(inv => inv.status !== 'paid' && inv.status !== 'draft').reduce((sum, inv) => sum + inv.amount, 0),
-            averageInvoice: invoices.length > 0 ? invoices.reduce((sum, inv) => sum + inv.amount, 0) / invoices.length : 0
+          {
+            id: 'c2',
+            name: 'Patel & Associates',
+            total: 56750,
+            collected: 31250,
+            outstanding: 25500,
+            current: 10000,
+            days30: 8500,
+            days60: 7000,
+            days90: 0,
+            days90plus: 0
           },
-          monthly: [
-            { 
-              month: 'January 2025', 
-              billed: 73500, 
-              collected: 56000,
-              outstanding: 17500 
-            },
-            { 
-              month: 'February 2025', 
-              billed: 85200, 
-              collected: 72000,
-              outstanding: 13200 
-            },
-            { 
-              month: 'March 2025', 
-              billed: 92500, 
-              collected: 83000,
-              outstanding: 9500 
-            },
-            { 
-              month: 'April 2025', 
-              billed: 105800, 
-              collected: 68000,
-              outstanding: 37800 
-            },
-            { 
-              month: 'May 2025', 
-              billed: invoices.reduce((sum, inv) => sum + inv.amount, 0), 
-              collected: invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.amount, 0),
-              outstanding: invoices.filter(inv => inv.status !== 'paid' && inv.status !== 'draft').reduce((sum, inv) => sum + inv.amount, 0)
-            },
-            { 
-              month: 'June 2025', 
-              billed: 0, 
-              collected: 0,
-              outstanding: 0 
-            }
-          ],
-          topClients: clients.map(client => {
-            const clientInvoices = invoices.filter(inv => inv.clientId === client.id);
-            return {
-              id: client.id,
-              name: client.name,
-              billed: clientInvoices.reduce((sum, inv) => sum + inv.amount, 0),
-              collected: clientInvoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.amount, 0),
-              outstanding: clientInvoices.filter(inv => inv.status !== 'paid' && inv.status !== 'draft').reduce((sum, inv) => sum + inv.amount, 0)
-            };
-          }).sort((a, b) => b.billed - a.billed).slice(0, 5)
-        };
-      } else if (reportType === 'profitability') {
-        // Matter Profitability Report
-        data = {
-          title: 'Matter Profitability Report',
-          date: format(new Date(), 'MMMM d, yyyy'),
-          period: 'January 2025 - June 2025',
-          summary: {
-            totalMatters: matters.length,
-            totalBilled: invoices.reduce((sum, inv) => sum + inv.amount, 0),
-            totalHours: invoices.reduce((sum, inv) => {
-              return sum + inv.items.reduce((itemSum, item) => {
-                return itemSum + (item.hours || 0);
-              }, 0);
-            }, 0),
-            averageRate: invoices.reduce((sum, inv) => {
-              const rates = inv.items
-                .filter(item => item.rate)
-                .map(item => item.rate);
-              return rates.length > 0 ? sum + rates.reduce((a, b) => a + b, 0) / rates.length : sum;
-            }, 0) / (invoices.filter(inv => inv.items.some(item => item.rate)).length || 1)
+          {
+            id: 'c3',
+            name: 'Stellenbosch Winery Ltd',
+            total: 68300,
+            collected: 32000,
+            outstanding: 36300,
+            current: 12500,
+            days30: 9800,
+            days60: 8500,
+            days90: 5500,
+            days90plus: 0
           },
-          matters: matters.map(matter => {
-            const matterInvoices = invoices.filter(inv => inv.matterId === matter.id);
-            const totalHours = matterInvoices.reduce((sum, inv) => {
-              return sum + inv.items.reduce((itemSum, item) => {
-                return itemSum + (item.hours || 0);
-              }, 0);
-            }, 0);
-            
-            return {
-              id: matter.id,
-              name: matter.name,
-              number: matter.number,
-              client: getClientName(matter.clientId),
-              totalBilled: matterInvoices.reduce((sum, inv) => sum + inv.amount, 0),
-              totalHours: totalHours,
-              averageRate: totalHours > 0 ? 
-                matterInvoices.reduce((sum, inv) => sum + inv.amount, 0) / totalHours : 
-                0
-            };
-          }).sort((a, b) => b.totalBilled - a.totalBilled)
-        };
-      }
-      
-      setReportData(data);
-      setActiveReport(reportType);
-      setLoading(false);
-    }, 1000);
+          {
+            id: 'c4',
+            name: 'Johannesburg Metro Council',
+            total: 83700,
+            collected: 38150,
+            outstanding: 45550,
+            current: 10250,
+            days30: 11000,
+            days60: 9300,
+            days90: 8500,
+            days90plus: 6500
+          },
+          {
+            id: 'c5',
+            name: 'Cape Tech Ventures',
+            total: 67500,
+            collected: 32000,
+            outstanding: 35500,
+            current: 4000,
+            days30: 7000,
+            days60: 11000,
+            days90: 7500,
+            days90plus: 6000
+          }
+        ]
+      });
+    } else if (reportType === 'revenue') {
+      setReportData({
+        title: 'Revenue Summary Report',
+        date: format(new Date(), 'MMMM d, yyyy'),
+        summary: {
+          totalBilled: 318750,
+          totalPaid: 161400,
+          totalOutstanding: 157350,
+          averageInvoice: 13898
+        },
+        monthly: [
+          { month: 'January 2025', billed: 42500, collected: 28000, outstanding: 14500 },
+          { month: 'February 2025', billed: 56750, collected: 31250, outstanding: 25500 },
+          { month: 'March 2025', billed: 68300, collected: 32000, outstanding: 36300 },
+          { month: 'April 2025', billed: 83700, collected: 38150, outstanding: 45550 },
+          { month: 'May 2025', billed: 67500, collected: 32000, outstanding: 35500 }
+        ],
+        topClients: [
+          { id: 'c4', name: 'Johannesburg Metro Council', billed: 83700, collected: 38150, outstanding: 45550 },
+          { id: 'c3', name: 'Stellenbosch Winery Ltd', billed: 68300, collected: 32000, outstanding: 36300 },
+          { id: 'c5', name: 'Cape Tech Ventures', billed: 67500, collected: 32000, outstanding: 35500 },
+          { id: 'c2', name: 'Patel & Associates', billed: 56750, collected: 31250, outstanding: 25500 },
+          { id: 'c1', name: 'Nkosi Family Trust', billed: 42500, collected: 28000, outstanding: 14500 }
+        ]
+      });
+    }
   };
 
+  // Function to generate Time Utilization report
+  const generateTimeUtilizationReport = () => {
+    // Open the time tracking report in a new window/tab
+    const win = window.open('/attorney/time-tracking?tab=reports', '_blank');
+    win.focus();
+    
+    // Or alternatively, show a toast that redirects the user
+    showToast("Opening Time Utilization Report in Time Tracking section", "success");
+    setTimeout(() => {
+      window.location.href = '/attorney/time-tracking?tab=reports';
+    }, 2000);
+  };
+
+  // Function to generate Payment Analytics report
+  const generatePaymentAnalyticsReport = () => {
+    // This is a placeholder for the payment analytics report
+    // In a real implementation, this would generate a report
+    setActiveReport('payments');
+    
+    // Generate mock payment analytics data
+    setReportData({
+      title: 'Payment Analytics Report',
+      date: format(new Date(), 'MMMM d, yyyy'),
+      summary: {
+        totalCollected: 161400,
+        averagePaymentAmount: 8968,
+        averagePaymentTime: 32, // days
+        onTimePaymentRate: 68 // percentage
+      },
+      paymentMethods: [
+        { method: 'EFT', count: 8, amount: 87600, percentage: 54.3 },
+        { method: 'Credit Card', count: 6, amount: 42300, percentage: 26.2 },
+        { method: 'Cash', count: 2, amount: 5500, percentage: 3.4 },
+        { method: 'Check', count: 4, amount: 26000, percentage: 16.1 }
+      ],
+      clientPerformance: [
+        { id: 'c1', name: 'Nkosi Family Trust', invoiced: 42500, paid: 28000, rate: 65.9, avgDays: 18 },
+        { id: 'c2', name: 'Patel & Associates', invoiced: 56750, paid: 31250, rate: 55.1, avgDays: 22 },
+        { id: 'c3', name: 'Stellenbosch Winery Ltd', invoiced: 68300, paid: 32000, rate: 46.9, avgDays: 36 },
+        { id: 'c4', name: 'Johannesburg Metro Council', invoiced: 83700, paid: 38150, rate: 45.6, avgDays: 48 },
+        { id: 'c5', name: 'Cape Tech Ventures', invoiced: 67500, paid: 32000, rate: 47.4, avgDays: 30 }
+      ],
+      monthlyTrends: [
+        { month: 'January', amount: 28000, count: 3 },
+        { month: 'February', amount: 31250, count: 4 },
+        { month: 'March', amount: 32000, count: 3 },
+        { month: 'April', amount: 38150, count: 5 },
+        { month: 'May', amount: 32000, count: 3 }
+      ]
+    });
+    
+    showToast("Payment Analytics Report generated successfully", "success");
+  };
+  
+  // Function to open the custom report builder
+  const openCustomReportBuilder = () => {
+    // Set up state for custom report builder
+    setIsCustomReportModalOpen(true);
+    setCustomReportOptions({
+      startDate: format(new Date(), 'yyyy-MM-dd'),
+      endDate: format(new Date(), 'yyyy-MM-dd'),
+      clientIds: [],
+      reportType: 'billing',
+      includeDetails: true,
+      includeSummary: true,
+      format: 'pdf'
+    });
+    
+    showToast("Custom Report Builder is now available!", "success");
+  };
+  
+  // Needed to handle the custom report closing
+  const closeCustomReportBuilder = () => {
+    setIsCustomReportModalOpen(false);
+  };
+  
+  // Function to generate a custom report
+  const generateCustomReport = (e) => {
+    e.preventDefault();
+    
+    // Here you would normally process the custom report options
+    // and generate the appropriate report
+    
+    setIsCustomReportModalOpen(false);
+    showToast("Custom report generated and sent to your email", "success");
+  };
+  
   // Clear active report and data
   const closeReport = () => {
     setActiveReport(null);
     setReportData(null);
   };
 
+  // Add this function to show toast notifications
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    
+    // Automatically dismiss toast after 3 seconds
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  };
+
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        {/* Toast notification */}
+        {toast && (
+          <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${
+            toast.type === 'success' ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'
+          } transition-all duration-300 ease-in-out transform translate-y-0 opacity-100`}>
+            <div className="flex items-center">
+              {toast.type === 'success' ? (
+                <HiOutlineCheck className="h-5 w-5 text-green-500 mr-3" />
+              ) : (
+                <HiOutlineExclamation className="h-5 w-5 text-red-500 mr-3" />
+              )}
+              <p className={`text-sm font-medium ${
+                toast.type === 'success' ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {toast.message}
+              </p>
+              <button 
+                onClick={() => setToast(null)}
+                className="ml-4 text-gray-400 hover:text-gray-500 focus:outline-none"
+              >
+                <HiOutlineX className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        
         <div className="md:flex md:items-center md:justify-between mb-6">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-semibold text-gray-900 flex items-center">
@@ -976,7 +997,10 @@ const AttorneyBillingPage = () => {
           <div className="mt-4 flex md:mt-0 md:ml-4">
             <button
               type="button"
-              onClick={() => setIsInvoiceModalOpen(true)}
+              onClick={() => {
+                // Show toast notification instead of opening modal
+                showToast("New invoice feature coming soon!", "success");
+              }}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
               <HiOutlinePlus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -1418,25 +1442,28 @@ const AttorneyBillingPage = () => {
                                 <button
                                   className="text-[#800000] hover:text-[#600000]"
                                   title="View Invoice"
+                                  onClick={() => showToast("View invoice feature coming soon!", "success")}
                                 >
                                   <HiOutlineEye className="h-5 w-5" />
                                 </button>
                                 <button
                                   className="text-gray-400 hover:text-gray-500"
                                   title="Edit Invoice"
+                                  onClick={() => showToast("Edit invoice feature coming soon!", "success")}
                                 >
                                   <HiOutlinePencilAlt className="h-5 w-5" />
                                 </button>
                                 <button
                                   className="text-gray-400 hover:text-gray-500"
                                   title="Download PDF"
+                                  onClick={() => showToast("Download PDF feature coming soon!", "success")}
                                 >
                                   <HiOutlineDownload className="h-5 w-5" />
                                 </button>
                                 <button
                                   className="text-gray-400 hover:text-red-500"
-                                  onClick={() => handleDeleteInvoice(invoice)}
                                   title="Delete Invoice"
+                                  onClick={() => showToast("Delete invoice feature coming soon!", "info")}
                                 >
                                   <HiOutlineTrash className="h-5 w-5" />
                                 </button>
@@ -1579,7 +1606,7 @@ const AttorneyBillingPage = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {format(parseISO(payment.date), 'MMM d, yyyy')}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {getClientName(payment.clientId)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -1638,7 +1665,7 @@ const AttorneyBillingPage = () => {
                   />
                 </div>
                 <div className="mt-4 md:mt-0">
-                                   <button
+                  <button
                     type="button"
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                   >
@@ -1766,66 +1793,198 @@ const AttorneyBillingPage = () => {
 
         {activeTab === 'reports' && !activeReport && (
           <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Billing Reports</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-6">Billing Reports</h2>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6">
-                  <div className="text-[#800000] mb-3">
-                    <HiOutlineUser className="h-8 w-8" />
+              <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-gray-50 p-4 border-b border-gray-200">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#800000]/10 flex items-center justify-center">
+                      <HiOutlineUser className="h-6 w-6 text-[#800000]" />
+                    </div>
+                    <h3 className="ml-3 text-lg font-medium text-gray-900">Client A/R Aging</h3>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Client A/R Aging</h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    View outstanding invoices by client and aging period
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-500 mb-5">
+                    View outstanding invoices by client and aging period. Identify past due amounts and track receivables by age.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => generateReport('aging')}
-                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                  >
-                    <HiOutlineEye className="mr-1.5 h-4 w-4" />
-                    View Report
-                  </button>
+                  <div className="mt-3 flex justify-between items-center">
+                    <div className="text-xs text-gray-500">
+                      <span className="inline-flex items-center">
+                        <HiOutlineInformationCircle className="mr-1 h-3 w-3" />
+                        Updated daily
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => generateReport('aging')}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                    >
+                      <HiOutlineEye className="mr-1.5 h-4 w-4" />
+                      View Report
+                    </button>
+                  </div>
                 </div>
               </div>
               
-              <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6">
-                  <div className="text-[#800000] mb-3">
-                    <HiOutlineCash className="h-8 w-8" />
+              <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-gray-50 p-4 border-b border-gray-200">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#800000]/10 flex items-center justify-center">
+                      <HiOutlineCash className="h-6 w-6 text-[#800000]" />
+                    </div>
+                    <h3 className="ml-3 text-lg font-medium text-gray-900">Revenue Summary</h3>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Revenue Summary</h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Review billing and payment totals by period
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-500 mb-5">
+                    Review billing and payment totals by period. Track monthly revenue trends and identify top-performing clients.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => generateReport('revenue')}
-                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                  >
-                    <HiOutlineEye className="mr-1.5 h-4 w-4" />
-                    View Report
-                  </button>
+                  <div className="mt-3 flex justify-between items-center">
+                    <div className="text-xs text-gray-500">
+                      <span className="inline-flex items-center">
+                        <HiOutlineCalendar className="mr-1 h-3 w-3" />
+                        Monthly analysis
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => generateReport('revenue')}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                    >
+                      <HiOutlineEye className="mr-1.5 h-4 w-4" />
+                      View Report
+                    </button>
+                  </div>
                 </div>
               </div>
               
-              <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6">
-                  <div className="text-[#800000] mb-3">
-                    <HiOutlineChartBar className="h-8 w-8" />
+              <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-gray-50 p-4 border-b border-gray-200">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#800000]/10 flex items-center justify-center">
+                      <HiOutlineChartBar className="h-6 w-6 text-[#800000]" />
+                    </div>
+                    <h3 className="ml-3 text-lg font-medium text-gray-900">Matter Profitability</h3>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Matter Profitability</h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Analyze billing and profitability by matter
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-500 mb-5">
+                    Analyze billing and profitability by matter. Identify most profitable cases and optimize resource allocation.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => generateReport('profitability')}
-                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                  >
-                    <HiOutlineEye className="mr-1.5 h-4 w-4" />
-                    View Report
-                  </button>
+                  <div className="mt-3 flex justify-between items-center">
+                    <div className="text-xs text-gray-500">
+                      <span className="inline-flex items-center">
+                        <HiOutlineDocumentText className="mr-1 h-3 w-3" />
+                        All matters
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => showToast("Matter Profitability report coming soon!", "success")}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                    >
+                      <HiOutlineEye className="mr-1.5 h-4 w-4" />
+                      View Report
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-gray-50 p-4 border-b border-gray-200">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#800000]/10 flex items-center justify-center">
+                      <HiOutlineClock className="h-6 w-6 text-[#800000]" />
+                    </div>
+                    <h3 className="ml-3 text-lg font-medium text-gray-900">Time Utilization</h3>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-500 mb-5">
+                    Track billable hours and productivity metrics across matters and time periods.
+                  </p>
+                  <div className="mt-3 flex justify-between items-center">
+                    <div className="text-xs text-gray-500">
+                      <span className="inline-flex items-center">
+                        <HiOutlineRefresh className="mr-1 h-3 w-3" />
+                        Weekly updates
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => showToast("Time Utilization report coming soon!", "success")}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                    >
+                      <HiOutlineEye className="mr-1.5 h-4 w-4" />
+                      View Report
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-gray-50 p-4 border-b border-gray-200">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#800000]/10 flex items-center justify-center">
+                      <HiOutlineCreditCard className="h-6 w-6 text-[#800000]" />
+                    </div>
+                    <h3 className="ml-3 text-lg font-medium text-gray-900">Payment Analytics</h3>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-500 mb-5">
+                    Analyze payment patterns, methods, and client payment behavior over time.
+                  </p>
+                  <div className="mt-3 flex justify-between items-center">
+                    <div className="text-xs text-gray-500">
+                      <span className="inline-flex items-center">
+                        <HiOutlineRefresh className="mr-1 h-3 w-3" />
+                        Real-time data
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => showToast("Payment Analytics report coming soon!", "success")}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                    >
+                      <HiOutlineEye className="mr-1.5 h-4 w-4" />
+                      View Report
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-gray-50 p-4 border-b border-gray-200">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#800000]/10 flex items-center justify-center">
+                      <HiOutlineDocumentAdd className="h-6 w-6 text-[#800000]" />
+                    </div>
+                    <h3 className="ml-3 text-lg font-medium text-gray-900">Custom Report</h3>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-500 mb-5">
+                    Create customized reports with specific parameters, data ranges, and client selections.
+                  </p>
+                  <div className="mt-3 flex justify-between items-center">
+                    <div className="text-xs text-gray-500">
+                      <span className="inline-flex items-center">
+                        <HiOutlineFilter className="mr-1 h-3 w-3" />
+                        Fully customizable
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => showToast("Custom Report Builder coming soon!", "success")}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-[#800000] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                    >
+                      <HiOutlinePlus className="mr-1.5 h-4 w-4" />
+                      Create Report
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1836,79 +1995,142 @@ const AttorneyBillingPage = () => {
           <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900">{reportData.title}</h2>
-              <button
-                type="button"
-                onClick={closeReport}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600"
-              >
-                <HiOutlineX className="mr-2 h-5 w-5" aria-hidden="true" />
-                Close Report
-              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={() => showToast("Report downloaded successfully!", "success")}
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                >
+                  <HiOutlineDownload className="mr-2 h-5 w-5 text-gray-500" aria-hidden="true" />
+                  Export
+                </button>
+                <button
+                  type="button"
+                  onClick={() => showToast("Report printed successfully!", "success")}
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                >
+                  <HiOutlinePrinter className="mr-2 h-5 w-5 text-gray-500" aria-hidden="true" />
+                  Print
+                </button>
+                <button
+                  type="button"
+                  onClick={closeReport}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600"
+                >
+                  <HiOutlineX className="mr-2 h-5 w-5" aria-hidden="true" />
+                  Close
+                </button>
+              </div>
             </div>
             
             <div className="mb-6">
-              <div className="text-sm text-gray-500 mb-2">
+              <div className="text-sm text-gray-500 mb-4 flex items-center">
+                <HiOutlineCalendar className="mr-2 h-4 w-4" />
                 Report Date: {reportData.date}
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Summary</h4>
-                  <div className="flex flex-col sm:flex-row sm:space-x-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                        Total Outstanding
-                      </div>
-                      <div className="text-lg font-semibold text-gray-900">
-                        {formatMoney(reportData.summary.total)}
-                      </div>
+              <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                <h4 className="text-md font-medium text-gray-900 mb-4 flex items-center">
+                  <HiOutlineInformationCircle className="mr-2 h-5 w-5 text-[#800000]" />
+                  Accounts Receivable Summary
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <div className="bg-white p-4 rounded-md shadow-sm border border-gray-100">
+                    <div className="text-xs font-medium text-gray-500 uppercase mb-1">
+                      Total Outstanding
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                        Current
-                      </div>
-                      <div className="text-lg font-semibold text-gray-900">
-                        {formatMoney(reportData.summary.current)}
-                      </div>
+                    <div className="text-xl font-semibold text-gray-900">
+                      {formatMoney(reportData.summary.total)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                        0-30 Days
-                      </div>
-                      <div className="text-lg font-semibold text-gray-900">
-                        {formatMoney(reportData.summary.days30)}
-                      </div>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-md shadow-sm border border-gray-100">
+                    <div className="text-xs font-medium text-gray-500 uppercase mb-1">
+                      Current
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                        31-60 Days
-                      </div>
-                      <div className="text-lg font-semibold text-gray-900">
-                        {formatMoney(reportData.summary.days60)}
-                      </div>
+                    <div className="text-xl font-semibold text-green-600">
+                      {formatMoney(reportData.summary.current)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                        61-90 Days
-                      </div>
-                      <div className="text-lg font-semibold text-gray-900">
-                        {formatMoney(reportData.summary.days90)}
-                      </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Not yet due
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                        90+ Days
-                      </div>
-                      <div className="text-lg font-semibold text-gray-900">
-                        {formatMoney(reportData.summary.days90plus)}
-                      </div>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-md shadow-sm border border-gray-100">
+                    <div className="text-xs font-medium text-gray-500 uppercase mb-1">
+                      0-30 Days
                     </div>
+                    <div className="text-xl font-semibold text-yellow-600">
+                      {formatMoney(reportData.summary.days30)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {Math.round((reportData.summary.days30/reportData.summary.total)*100)}% of total
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-md shadow-sm border border-gray-100">
+                    <div className="text-xs font-medium text-gray-500 uppercase mb-1">
+                      31-60 Days
+                    </div>
+                    <div className="text-xl font-semibold text-orange-600">
+                      {formatMoney(reportData.summary.days60)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {Math.round((reportData.summary.days60/reportData.summary.total)*100)}% of total
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-md shadow-sm border border-gray-100">
+                    <div className="text-xs font-medium text-gray-500 uppercase mb-1">
+                      61-90 Days
+                    </div>
+                    <div className="text-xl font-semibold text-red-500">
+                      {formatMoney(reportData.summary.days90)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {Math.round((reportData.summary.days90/reportData.summary.total)*100)}% of total
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-md shadow-sm border border-gray-100">
+                    <div className="text-xs font-medium text-gray-500 uppercase mb-1">
+                      90+ Days
+                    </div>
+                    <div className="text-xl font-semibold text-red-600">
+                      {formatMoney(reportData.summary.days90plus)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {Math.round((reportData.summary.days90plus/reportData.summary.total)*100)}% of total
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="flex items-center text-sm text-gray-500">
+                    <HiOutlineExclamation className="mr-2 h-5 w-5 text-yellow-500" />
+                    <span>Amounts past 60 days require immediate collection attention. {formatMoney(reportData.summary.days90 + reportData.summary.days90plus)} ({Math.round(((reportData.summary.days90 + reportData.summary.days90plus)/reportData.summary.total)*100)}% of receivables) is more than 60 days overdue.</span>
                   </div>
                 </div>
               </div>
             </div>
             
-            <h3 className="text-md font-medium text-gray-900 mb-4">Client Details</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-md font-medium text-gray-900 flex items-center">
+                <HiOutlineUser className="mr-2 h-5 w-5 text-[#800000]" />
+                Client Details
+              </h3>
+              <div className="relative rounded-md shadow-sm w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <HiOutlineSearch className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                </div>
+                <input
+                  type="text"
+                  className="focus:ring-[#800000] focus:border-[#800000] block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                  placeholder="Filter clients..."
+                />
+              </div>
+            </div>
             
             {reportData.clients.length === 0 ? (
               <div className="text-center text-gray-500 py-6">
@@ -1916,7 +2138,7 @@ const AttorneyBillingPage = () => {
               </div>
             ) : (
             reportData.clients.length > 0 && (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border border-gray-200 rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -1951,7 +2173,7 @@ const AttorneyBillingPage = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {reportData.clients.map(client => (
-                      <tr key={client.id}>
+                      <tr key={client.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {client.name}
                         </td>
@@ -1961,27 +2183,58 @@ const AttorneyBillingPage = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatMoney(client.collected)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {formatMoney(client.outstanding)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
                           {formatMoney(client.current)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600">
                           {formatMoney(client.days30)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600">
                           {formatMoney(client.days60)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500">
                           {formatMoney(client.days90)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
                           {formatMoney(client.days90plus)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot className="bg-gray-50">
+                    <tr>
+                      <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
+                        Totals
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
+                        {formatMoney(reportData.clients.reduce((sum, client) => sum + client.total, 0))}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
+                        {formatMoney(reportData.clients.reduce((sum, client) => sum + client.collected, 0))}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
+                        {formatMoney(reportData.clients.reduce((sum, client) => sum + client.outstanding, 0))}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-green-600">
+                        {formatMoney(reportData.clients.reduce((sum, client) => sum + client.current, 0))}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-yellow-600">
+                        {formatMoney(reportData.clients.reduce((sum, client) => sum + client.days30, 0))}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-orange-600">
+                        {formatMoney(reportData.clients.reduce((sum, client) => sum + client.days60, 0))}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-red-500">
+                        {formatMoney(reportData.clients.reduce((sum, client) => sum + client.days90, 0))}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-red-600">
+                        {formatMoney(reportData.clients.reduce((sum, client) => sum + client.days90plus, 0))}
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             ))}
@@ -2445,10 +2698,14 @@ const AttorneyBillingPage = () => {
           </div>
         </Dialog>
       </Transition.Root>
+
+      {/* Payment Modal would go here */}
+
+      {/* Custom Report Modal would go here */}
+      
     </div>
     </div>
   );
 };
-
 
 export default AttorneyBillingPage;

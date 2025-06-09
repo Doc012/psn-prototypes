@@ -24,12 +24,14 @@ import {
   HiOutlineArrowUp,
   HiOutlineArrowDown,
   HiOutlineClipboardList,
+  HiOutlineCheckCircle,
   HiSortAscending,
   HiSortDescending,
 } from 'react-icons/hi';
 // Fix the import path to match your project structure
 import { useAuth } from '../../../context/AuthContext';
 
+// Define the component with a named export for clarity
 const AttorneyClientsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -47,6 +49,7 @@ const AttorneyClientsPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [viewStyle, setViewStyle] = useState('table');
+  const [successMessage, setSuccessMessage] = useState('');
   
   const clientTypes = [
     { id: 'individual', name: 'Individual' },
@@ -247,8 +250,15 @@ const AttorneyClientsPage = () => {
     setIsFilterMenuOpen(false);
   };
 
+  // Update the handleAddClient function to only show a notification
   const handleAddClient = () => {
-    setIsAddClientModalOpen(true);
+    // Show toast message instead of opening modal
+    setSuccessMessage("Client creation is not available at this time. Feature coming soon.");
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 5000);
   };
 
   const handleNewClientChange = (e) => {
@@ -261,46 +271,83 @@ const AttorneyClientsPage = () => {
 
   const handleSubmitNewClient = (e) => {
     e.preventDefault();
-    // In a real app, you would send this data to your API
+    
+    // Form validation
+    if (!newClient.name.trim() || !newClient.email.trim()) {
+      // In a real app, you'd show validation errors
+      return;
+    }
+    
+    // Generate a color for the avatar based on client type
+    let bgColor;
+    switch(newClient.type) {
+      case 'individual': bgColor = '0D8ABC'; break;
+      case 'business': bgColor = '8A2BE2'; break;
+      case 'nonprofit': bgColor = '27AE60'; break;
+      case 'government': bgColor = 'D35400'; break;
+      default: bgColor = Math.floor(Math.random()*16777215).toString(16);
+    }
+    
+    // Create the new client with generated fields
     const newClientWithId = {
       ...newClient,
-      id: `temp-${Date.now()}`,
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(newClient.name)}&background=random&color=fff`,
+      id: `client-${Date.now()}`,
+      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(newClient.name)}&background=${bgColor}&color=fff`,
       caseCount: 0,
       lastActivity: 'Client added',
       lastActivityDate: new Date().toISOString(),
       dateAdded: new Date().toISOString()
     };
     
+    // Add to the clients list
     setClients(prev => [newClientWithId, ...prev]);
+    
+    // Close modal and show success message
     setIsAddClientModalOpen(false);
-    setNewClient({
-      name: '',
-      email: '',
-      phone: '',
-      type: 'individual',
-      address: '',
-      status: 'active',
-      notes: ''
-    });
+    setSuccessMessage(`Client "${newClient.name}" has been added successfully.`);
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 5000);
   };
 
+  // Update the handleDeleteClient function to only show a notification
   const handleDeleteClient = (e, client) => {
     e.stopPropagation();
-    setSelectedClient(client);
-    setIsDeleteModalOpen(true);
+    // Show toast message instead of opening delete modal
+    setSuccessMessage(`Client deletion is not available at this time. Feature coming soon.`);
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 5000);
   };
 
   const confirmDeleteClient = () => {
-    // In a real app, you would call your API to delete the client
+    // Remove the client from the list
     setClients(prev => prev.filter(c => c.id !== selectedClient.id));
     setIsDeleteModalOpen(false);
+    
+    // Show success message
+    setSuccessMessage(`Client "${selectedClient.name}" has been deleted.`);
+    
+    // Clear selected client
     setSelectedClient(null);
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 5000);
   };
 
   const handleClientClick = (client) => {
-    // Navigate to client details page
-    navigate(`/attorney/clients/${client.id}`);
+    // In a real app, you would navigate to the client details page
+    // For demo purposes, just show a message
+    setSuccessMessage(`Viewing client: ${client.name}`);
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
   };
 
   const formatDate = (dateString) => {
@@ -311,15 +358,15 @@ const AttorneyClientsPage = () => {
   const getClientTypeIcon = (type) => {
     switch (type) {
       case 'individual':
-        return <HiOutlineUserCircle className="h-6 w-6 text-blue-500" />;
+        return <HiOutlineUserCircle className="h-5 w-5 text-blue-500" />;
       case 'business':
-        return <HiOutlineOfficeBuilding className="h-6 w-6 text-indigo-500" />;
+        return <HiOutlineOfficeBuilding className="h-5 w-5 text-indigo-500" />;
       case 'nonprofit':
-        return <HiOutlineUsers className="h-6 w-6 text-green-500" />;
+        return <HiOutlineUsers className="h-5 w-5 text-green-500" />;
       case 'government':
-        return <HiOutlineOfficeBuilding className="h-6 w-6 text-orange-500" />;
+        return <HiOutlineOfficeBuilding className="h-5 w-5 text-orange-500" />;
       default:
-        return <HiOutlineUserCircle className="h-6 w-6 text-gray-500" />;
+        return <HiOutlineUserCircle className="h-5 w-5 text-gray-500" />;
     }
   };
 
@@ -339,6 +386,20 @@ const AttorneyClientsPage = () => {
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        {/* Success message toast */}
+        {successMessage && (
+          <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 rounded-md shadow-md p-4 flex items-center transition-all duration-300 ease-in-out">
+            <HiOutlineCheckCircle className="h-5 w-5 text-green-500 mr-2" />
+            <span>{successMessage}</span>
+            <button
+              onClick={() => setSuccessMessage('')}
+              className="ml-4 text-green-600 hover:text-green-800"
+            >
+              <HiOutlineX className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+        
         {/* Page header */}
         <div className="md:flex md:items-center md:justify-between mb-6">
           <div className="flex-1 min-w-0">
@@ -351,6 +412,7 @@ const AttorneyClientsPage = () => {
             </p>
           </div>
           <div className="mt-4 flex md:mt-0 md:ml-4">
+            {/* Update the New Client button to look normal (remove disabled styling) */}
             <button
               type="button"
               onClick={handleAddClient}
@@ -422,10 +484,7 @@ const AttorneyClientsPage = () => {
                   Filters
                   {(filterStatus !== 'all' || filterType !== 'all') && (
                     <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#800000] text-white">
-                      {{
-                        [filterStatus !== 'all']: 1,
-                        [filterType !== 'all']: 1
-                      }[true]}
+                      {(filterStatus !== 'all' ? 1 : 0) + (filterType !== 'all' ? 1 : 0)}
                     </span>
                   )}
                 </button>
@@ -639,6 +698,10 @@ const AttorneyClientsPage = () => {
                               className="h-12 w-12 rounded-full mr-4"
                               src={client.avatarUrl}
                               alt={client.name}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(client.name)}&background=800000&color=fff`;
+                              }}
                             />
                             <div>
                               <h3 className="text-lg font-medium text-gray-900">{client.name}</h3>
@@ -682,12 +745,14 @@ const AttorneyClientsPage = () => {
                               className="text-gray-400 hover:text-gray-500"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/attorney/clients/${client.id}/edit`);
+                                setSuccessMessage(`Editing client: ${client.name}`);
+                                setTimeout(() => setSuccessMessage(''), 3000);
                               }}
                               title="Edit Client"
                             >
                               <HiOutlinePencilAlt className="h-5 w-5" />
                             </button>
+                            {/* Update the delete buttons in card view */}
                             <button
                               className="text-gray-400 hover:text-red-500"
                               onClick={(e) => handleDeleteClient(e, client)}
@@ -827,6 +892,10 @@ const AttorneyClientsPage = () => {
                                     className="h-10 w-10 rounded-full"
                                     src={client.avatarUrl}
                                     alt={client.name}
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(client.name)}&background=800000&color=fff`;
+                                    }}
                                   />
                                 </div>
                                 <div className="ml-4">
@@ -865,12 +934,14 @@ const AttorneyClientsPage = () => {
                                   className="text-gray-600 hover:text-[#800000]"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigate(`/attorney/clients/${client.id}/edit`);
+                                    setSuccessMessage(`Editing client: ${client.name}`);
+                                    setTimeout(() => setSuccessMessage(''), 3000);
                                   }}
                                   title="Edit Client"
                                 >
                                   <HiOutlinePencilAlt className="h-5 w-5" />
                                 </button>
+                                {/* Update the delete buttons in table view */}
                                 <button
                                   className="text-gray-600 hover:text-red-600"
                                   onClick={(e) => handleDeleteClient(e, client)}
@@ -895,41 +966,53 @@ const AttorneyClientsPage = () => {
                                       <div className="py-1">
                                         <Menu.Item>
                                           {({ active }) => (
-                                            <Link
-                                              to={`/attorney/clients/${client.id}`}
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSuccessMessage(`Viewing client: ${client.name}`);
+                                                setTimeout(() => setSuccessMessage(''), 3000);
+                                              }}
                                               className={`${
                                                 active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                              } flex px-4 py-2 text-sm`}
+                                              } flex w-full px-4 py-2 text-sm text-left`}
                                             >
                                               <HiOutlineEye className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
                                               View details
-                                            </Link>
+                                            </button>
                                           )}
                                         </Menu.Item>
                                         <Menu.Item>
                                           {({ active }) => (
-                                            <Link
-                                              to={`/attorney/clients/${client.id}/cases`}
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSuccessMessage(`Viewing cases for: ${client.name}`);
+                                                setTimeout(() => setSuccessMessage(''), 3000);
+                                              }}
                                               className={`${
                                                 active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                              } flex px-4 py-2 text-sm`}
+                                              } flex w-full px-4 py-2 text-sm text-left`}
                                             >
                                               <HiOutlineDocumentText className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
                                               View cases
-                                            </Link>
+                                            </button>
                                           )}
                                         </Menu.Item>
                                         <Menu.Item>
                                           {({ active }) => (
-                                            <Link
-                                              to={`/attorney/clients/${client.id}/edit`}
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSuccessMessage(`Editing client: ${client.name}`);
+                                                setTimeout(() => setSuccessMessage(''), 3000);
+                                              }}
                                               className={`${
                                                 active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                              } flex px-4 py-2 text-sm`}
+                                              } flex w-full px-4 py-2 text-sm text-left`}
                                             >
                                               <HiOutlinePencilAlt className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
                                               Edit client
-                                            </Link>
+                                            </button>
                                           )}
                                         </Menu.Item>
                                         <Menu.Item>
@@ -937,7 +1020,7 @@ const AttorneyClientsPage = () => {
                                             <button
                                               className={`${
                                                 active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                              } flex w-full px-4 py-2 text-sm`}
+                                              } flex w-full px-4 py-2 text-sm text-left`}
                                               onClick={(e) => handleDeleteClient(e, client)}
                                             >
                                               <HiOutlineTrash className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
@@ -963,7 +1046,7 @@ const AttorneyClientsPage = () => {
         )}
 
         {/* Add Client Modal */}
-        <Transition appear show={isAddClientModalOpen} as={Fragment}>
+        <Transition appear show={isAddClientModalOpen} as={React.Fragment}>
           <Dialog
             as="div"
             className="fixed inset-0 z-10 overflow-y-auto"
@@ -1048,6 +1131,7 @@ const AttorneyClientsPage = () => {
                           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
                           value={newClient.phone}
                           onChange={handleNewClientChange}
+                          placeholder="(555) 123-4567"
                         />
                       </div>
                       
@@ -1081,6 +1165,7 @@ const AttorneyClientsPage = () => {
                           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
                           value={newClient.address}
                           onChange={handleNewClientChange}
+                          placeholder="123 Main St, City, State ZIP"
                         />
                       </div>
                       
@@ -1112,6 +1197,7 @@ const AttorneyClientsPage = () => {
                           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#800000] focus:border-[#800000] sm:text-sm"
                           value={newClient.notes}
                           onChange={handleNewClientChange}
+                          placeholder="Additional notes about this client..."
                         ></textarea>
                       </div>
                     </div>
@@ -1140,7 +1226,7 @@ const AttorneyClientsPage = () => {
         </Transition>
 
         {/* Delete Client Confirmation Modal */}
-        <Transition appear show={isDeleteModalOpen} as={Fragment}>
+        <Transition appear show={isDeleteModalOpen} as={React.Fragment}>
           <Dialog
             as="div"
             className="fixed inset-0 z-10 overflow-y-auto"
@@ -1220,4 +1306,5 @@ const AttorneyClientsPage = () => {
   );
 };
 
+// Make sure to export the component properly
 export default AttorneyClientsPage;
