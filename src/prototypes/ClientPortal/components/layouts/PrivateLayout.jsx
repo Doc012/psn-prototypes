@@ -147,7 +147,7 @@ const PrivateLayout = () => {
           {/* Page content container with animations */}
           <div className="py-6 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto">
             {/* Welcome alert */}
-            <AnimatePresence>
+            {/* <AnimatePresence>
               {showWelcome && (
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
@@ -178,7 +178,7 @@ const PrivateLayout = () => {
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
+            </AnimatePresence> */}
 
             {/* Page loading animation */}
             <AnimatePresence>
