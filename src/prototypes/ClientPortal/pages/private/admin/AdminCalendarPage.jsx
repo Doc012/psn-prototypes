@@ -47,6 +47,11 @@ const AdminCalendarPage = () => {
   const [selectedClient, setSelectedClient] = useState('all');
   const [selectedEventType, setSelectedEventType] = useState('all');
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [toast, setToast] = useState(null);
+  
+  // Add new state for the info dialog
+  const [showEventInfo, setShowEventInfo] = useState(false);
+  const [eventInfoPosition, setEventInfoPosition] = useState({ x: 0, y: 0 });
   
   // Mock data - in a real app, fetch from API
   const clients = [
@@ -237,10 +242,25 @@ const AdminCalendarPage = () => {
     setShowEventModal(true);
   };
 
-  const handleEventClick = (event) => {
+  // Update the handleEventClick function to track the relative position of the event
+  const handleEventClick = (event, e) => {
+    e.stopPropagation();
+    
+    // Get relative position to the document instead of viewport
+    const rect = e.currentTarget.getBoundingClientRect();
+    setEventInfoPosition({
+      x: rect.left + (rect.width / 2) + window.scrollX,
+      y: rect.bottom + window.scrollY
+    });
+    
     setSelectedEvent(event);
-    setNewEvent(event);
-    setShowEventModal(true);
+    setShowEventInfo(true);
+  };
+
+  // Update or add a handleEventHover function for hover effects if you want to keep that
+  const handleEventHover = (event, e) => {
+    // Do nothing - we'll only show info on click now
+    // Or you could implement a preview behavior here if desired
   };
 
   const handlePrevious = () => {
@@ -352,6 +372,13 @@ const AdminCalendarPage = () => {
     setShowDeleteConfirmation(true);
   };
 
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000); // Auto-dismiss after 3 seconds
+  };
+
   // Event colors and classes
   const getEventColorClass = (type) => {
     const eventType = getEventType(type);
@@ -399,7 +426,7 @@ const AdminCalendarPage = () => {
               } ${
                 isToday(day) ? 'bg-blue-50' : ''
               }`}
-              onClick={() => handleDateClick(day)}
+              onClick={() => showToast("New event feature coming soon!", "success")}
             >
               <div className="flex items-center justify-between">
                 <span className={`text-sm ${isToday(day) ? 'font-bold bg-blue-500 text-white rounded-full w-7 h-7 flex items-center justify-center' : ''}`}>
@@ -419,8 +446,11 @@ const AdminCalendarPage = () => {
                     className={`text-xs px-2 py-1 rounded truncate ${getEventColorClass(event.type)} text-white cursor-pointer`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleEventClick(event);
+                      handleEventClick(event, e);
                     }}
+                    // Keep or remove onMouseEnter based on whether you want hover effects
+                    // onMouseEnter={(e) => handleEventHover(event, e)}
+                    // Remove this: onMouseLeave={handleEventLeave}
                   >
                     {!event.allDay && format(parseISO(event.start), 'h:mm a')} {event.title}
                   </div>
@@ -507,7 +537,7 @@ const AdminCalendarPage = () => {
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleEventClick(event);
+                        handleEventClick(event, e);
                       }}
                     >
                       <div className="font-semibold">{event.title}</div>
@@ -671,7 +701,7 @@ const AdminCalendarPage = () => {
               <div className="mt-6">
                 <button
                   type="button"
-                  onClick={() => handleDateClick(new Date())}
+                  onClick={() => showToast("New event feature coming soon!", "success")}
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                 >
                   <HiOutlinePlusCircle className="-ml-1 mr-2 h-5 w-5" />
@@ -697,7 +727,7 @@ const AdminCalendarPage = () => {
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3">
             <button
-              onClick={() => handleDateClick(new Date())}
+              onClick={() => showToast("New event feature coming soon!", "success")}
               type="button"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
@@ -1296,6 +1326,142 @@ const AdminCalendarPage = () => {
           </div>
         </Dialog>
       </Transition.Root>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 max-w-sm w-full bg-white shadow-lg rounded-lg p-4 z-50 ${
+          toast.type === 'success' ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'
+        }`}>
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {toast.type === 'success' ? (
+                <HiOutlineCheck className="h-6 w-6 text-green-500" />
+              ) : (
+                <HiOutlineExclamation className="h-6 w-6 text-red-500" />
+              )}
+            </div>
+            <div className="ml-3 w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900">{toast.message}</p>
+            </div>
+            <div className="ml-4 flex-shrink-0">
+              <button
+                onClick={() => setToast(null)}
+                className="inline-flex text-gray-400 hover:text-gray-500"
+              >
+                <HiOutlineX className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event Info Dialog */}
+      {showEventInfo && selectedEvent && (
+        <div 
+          className="absolute bg-white rounded-lg shadow-lg p-4 z-50 w-80 event-info-dialog"
+          style={{
+            position: 'absolute', // Changed from fixed to absolute
+            left: `${eventInfoPosition.x}px`,
+            top: `${eventInfoPosition.y}px`,
+            transform: 'translate(-50%, 10px)',
+            maxWidth: '90vw',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-2 sticky top-0 bg-white pt-1 pb-2">
+            <h3 className="text-lg font-semibold truncate">{selectedEvent.title}</h3>
+            <div className="flex items-center space-x-2 flex-shrink-0">
+              <div className={`w-3 h-3 rounded-full ${getEventColorClass(selectedEvent.type)}`}></div>
+              <button 
+                onClick={() => setShowEventInfo(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <HiOutlineX className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="space-y-3 text-sm overflow-y-auto">
+            <div className="flex items-start">
+              <HiOutlineClock className="flex-shrink-0 mr-2 h-5 w-5 text-gray-400 mt-0.5" />
+              <div>
+                <div>{format(parseISO(selectedEvent.start), 'EEEE, MMMM d, yyyy')}</div>
+                <div>
+                  {selectedEvent.allDay 
+                    ? 'All day' 
+                    : `${format(parseISO(selectedEvent.start), 'h:mm a')} - ${format(parseISO(selectedEvent.end), 'h:mm a')}`}
+                </div>
+              </div>
+            </div>
+            
+            {selectedEvent.description && (
+              <div className="flex items-start">
+                <HiOutlineDocumentText className="flex-shrink-0 mr-2 h-5 w-5 text-gray-400 mt-0.5" />
+                <div className="break-words">{selectedEvent.description}</div>
+              </div>
+            )}
+            
+            {selectedEvent.location && (
+              <div className="flex items-start">
+                <HiOutlineLocationMarker className="flex-shrink-0 mr-2 h-5 w-5 text-gray-400 mt-0.5" />
+                <div>{getLocationName(selectedEvent.location)}</div>
+              </div>
+            )}
+            
+            {selectedEvent.clientId && (
+              <div className="flex items-start">
+                <HiOutlineUserGroup className="flex-shrink-0 mr-2 h-5 w-5 text-gray-400 mt-0.5" />
+                <div>{getClientName(selectedEvent.clientId)}</div>
+              </div>
+            )}
+            
+            {selectedEvent.staffMembers && selectedEvent.staffMembers.length > 0 && (
+              <div className="flex items-start">
+                <HiOutlineOfficeBuilding className="flex-shrink-0 mr-2 h-5 w-5 text-gray-400 mt-0.5" />
+                <div>
+                  {selectedEvent.staffMembers.map(staffId => getStaffName(staffId)).join(', ')}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Click outside and escape key handling */}
+      {useEffect(() => {
+        const handleClickOutside = (e) => {
+          if (showEventInfo && !e.target.closest('.event-info-dialog')) {
+            setShowEventInfo(false);
+          }
+        };
+        
+        const handleEscapeKey = (e) => {
+          if (e.key === 'Escape' && showEventInfo) {
+            setShowEventInfo(false);
+          }
+        };
+        
+        const handleScroll = () => {
+          if (showEventInfo && selectedEvent) {
+            // Close the tooltip when scrolling to avoid positioning issues
+            setShowEventInfo(false);
+          }
+        };
+        
+        if (showEventInfo) {
+          document.addEventListener('mousedown', handleClickOutside);
+          document.addEventListener('keydown', handleEscapeKey);
+          window.addEventListener('scroll', handleScroll);
+        }
+        
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+          document.removeEventListener('keydown', handleEscapeKey);
+          window.removeEventListener('scroll', handleScroll);
+        };
+      }, [showEventInfo, selectedEvent])}
     </div>
   )
 }

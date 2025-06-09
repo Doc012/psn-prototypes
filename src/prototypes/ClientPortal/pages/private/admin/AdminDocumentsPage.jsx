@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Dialog, Transition, Menu } from '@headlessui/react';
 import { Fragment } from 'react';
 import {
@@ -27,6 +28,7 @@ import {
 
 const AdminDocumentsPage = () => {
   // State
+  const [toast, setToast] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDocumentType, setSelectedDocumentType] = useState('all');
   const [sortBy, setSortBy] = useState('dateDesc');
@@ -386,6 +388,12 @@ const AdminDocumentsPage = () => {
     }
   };
 
+  // Toast notification function
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
@@ -398,7 +406,7 @@ const AdminDocumentsPage = () => {
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3">
             <button
-              onClick={() => setIsUploadingDocument(true)}
+              onClick={() => showToast("Document upload feature coming soon!", "success")}
               type="button"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
@@ -406,7 +414,7 @@ const AdminDocumentsPage = () => {
               Upload Document
             </button>
             <button
-              onClick={() => setIsCreatingFolder(true)}
+              onClick={() => showToast("New folder feature coming soon!", "success")}
               type="button"
               className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
@@ -514,26 +522,28 @@ const AdminDocumentsPage = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => setShowMoveDialog(true)}
+                  onClick={() => showToast("Move documents feature coming soon!", "success")}
                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                 >
                   <HiOutlineArrowSmRight className="-ml-1 mr-1 h-4 w-4" />
                   Move
                 </button>
                 <button
+                  onClick={() => showToast("Download documents feature coming soon!", "success")}
                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                 >
                   <HiOutlineDownload className="-ml-1 mr-1 h-4 w-4" />
                   Download
                 </button>
                 <button
+                  onClick={() => showToast("Share documents feature coming soon!", "success")}
                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                 >
                   <HiOutlineShare className="-ml-1 mr-1 h-4 w-4" />
                   Share
                 </button>
                 <button
-                  onClick={() => setShowDeleteConfirmation(true)}
+                  onClick={() => showToast("Delete documents feature coming soon!", "success")}
                   className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   <HiOutlineTrash className="-ml-1 mr-1 h-4 w-4" />
@@ -544,289 +554,377 @@ const AdminDocumentsPage = () => {
           )}
 
           {/* Document/folder list */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        onChange={toggleSelectAll}
-                        checked={selectedDocuments.length > 0 && selectedDocuments.length === getCurrentFolderContents().filter(item => item.type === 'document').length}
-                        className="h-4 w-4 text-[#800000] focus:ring-[#800000] border-gray-300 rounded"
-                      />
-                    </div>
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Owner
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Modified
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Size
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {getCurrentFolderContents().length === 0 ? (
+          <div className="overflow-visible">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center">
-                        {searchTerm ? (
-                          <>
-                            <HiOutlineSearch className="h-12 w-12 text-gray-400 mb-3" />
-                            <h3 className="text-sm font-medium text-gray-900">No documents found</h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              No results for "{searchTerm}"
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <HiOutlineDocumentText className="h-12 w-12 text-gray-400 mb-3" />
-                            <h3 className="text-sm font-medium text-gray-900">No documents in this folder</h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              Upload documents or create folders to get started
-                            </p>
-                            <div className="mt-6 flex space-x-3">
-                              <button
-                                onClick={() => setIsUploadingDocument(true)}
-                                type="button"
-                                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                              >
-                                <HiOutlineUpload className="-ml-1 mr-2 h-5 w-5" />
-                                Upload Document
-                              </button>
-                              <button
-                                onClick={() => setIsCreatingFolder(true)}
-                                type="button"
-                                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                              >
-                                <HiOutlineFolderAdd className="-ml-1 mr-2 h-5 w-5" />
-                                New Folder
-                              </button>
-                            </div>
-                          </>
-                        )}
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          onChange={toggleSelectAll}
+                          checked={selectedDocuments.length > 0 && selectedDocuments.length === getCurrentFolderContents().filter(item => item.type === 'document').length}
+                          className="h-4 w-4 text-[#800000] focus:ring-[#800000] border-gray-300 rounded"
+                        />
                       </div>
-                    </td>
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Owner
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Modified
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Size
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ) : (
-                  getCurrentFolderContents().map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {item.type === 'document' ? (
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedDocuments.includes(item.id)}
-                              onChange={() => toggleDocumentSelection(item.id)}
-                              className="h-4 w-4 text-[#800000] focus:ring-[#800000] border-gray-300 rounded"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-4"></div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center">
-                            {item.type === 'folder' ? (
-                              <HiOutlineFolder className="h-6 w-6 text-yellow-500" />
-                            ) : (
-                              getDocumentTypeIcon(item.documentType)
-                            )}
-                          </div>
-                          <div className="ml-4">
-                            {item.type === 'folder' ? (
-                              <button
-                                onClick={() => navigateToFolder(item.id, item.name)}
-                                className="text-sm font-medium text-[#800000] hover:text-[#600000]"
-                              >
-                                {item.name}
-                              </button>
-                            ) : (
-                              <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                            )}
-                            {item.type === 'document' && (
-                              <div className="text-xs text-gray-500">
-                                {documentTypes.find(t => t.id === item.documentType)?.name || 'Document'}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{item.owner}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <HiOutlineCalendar className="mr-1.5 h-4 w-4 text-gray-400" />
-                          <div className="text-sm text-gray-500">{formatDate(item.dateModified)}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatFileSize(item.size)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          {item.type === 'document' && (
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {getCurrentFolderContents().length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-12 text-center">
+                        <div className="flex flex-col items-center">
+                          {searchTerm ? (
                             <>
-                              <button
-                                className="text-gray-500 hover:text-gray-700"
-                                title="Download"
-                              >
-                                <HiOutlineDownload className="h-5 w-5" />
-                              </button>
-                              <button
-                                className="text-gray-500 hover:text-gray-700"
-                                title="Share"
-                              >
-                                <HiOutlineShare className="h-5 w-5" />
-                              </button>
+                              <HiOutlineSearch className="h-12 w-12 text-gray-400 mb-3" />
+                              <h3 className="text-sm font-medium text-gray-900">No documents found</h3>
+                              <p className="mt-1 text-sm text-gray-500">
+                                No results for "{searchTerm}"
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <HiOutlineDocumentText className="h-12 w-12 text-gray-400 mb-3" />
+                              <h3 className="text-sm font-medium text-gray-900">No documents in this folder</h3>
+                              <p className="mt-1 text-sm text-gray-500">
+                                Upload documents or create folders to get started
+                              </p>
+                              <div className="mt-6 flex space-x-3">
+                                <button
+                                  onClick={() => setIsUploadingDocument(true)}
+                                  type="button"
+                                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                                >
+                                  <HiOutlineUpload className="-ml-1 mr-2 h-5 w-5" />
+                                  Upload Document
+                                </button>
+                                <button
+                                  onClick={() => setIsCreatingFolder(true)}
+                                  type="button"
+                                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
+                                >
+                                  <HiOutlineFolderAdd className="-ml-1 mr-2 h-5 w-5" />
+                                  New Folder
+                                </button>
+                              </div>
                             </>
                           )}
-                          <Menu as="div" className="relative inline-block text-left">
-                            <div>
-                              <Menu.Button className="text-gray-500 hover:text-gray-700">
-                                <HiOutlineChevronDown className="h-5 w-5" />
-                              </Menu.Button>
-                            </div>
-                            <Transition
-                              as={Fragment}
-                              enter="transition ease-out duration-100"
-                              enterFrom="transform opacity-0 scale-95"
-                              enterTo="transform opacity-100 scale-100"
-                              leave="transition ease-in duration-75"
-                              leaveFrom="transform opacity-100 scale-100"
-                              leaveTo="transform opacity-0 scale-95"
-                            >
-                              <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
-                                <div className="py-1">
-                                  {item.type === 'folder' ? (
-                                    <>
-                                      <Menu.Item>
-                                        {({ active }) => (
-                                          <button
-                                            className={`${
-                                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                            } block w-full text-left px-4 py-2 text-sm`}
-                                          >
-                                            Rename folder
-                                          </button>
-                                        )}
-                                      </Menu.Item>
-                                      <Menu.Item>
-                                        {({ active }) => (
-                                          <button
-                                            className={`${
-                                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                            } block w-full text-left px-4 py-2 text-sm`}
-                                          >
-                                            Move folder
-                                          </button>
-                                        )}
-                                      </Menu.Item>
-                                      <Menu.Item>
-                                        {({ active }) => (
-                                          <button
-                                            className={`${
-                                              active ? 'bg-red-50 text-red-700' : 'text-red-600'
-                                            } block w-full text-left px-4 py-2 text-sm`}
-                                          >
-                                            Delete folder
-                                          </button>
-                                        )}
-                                      </Menu.Item>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Menu.Item>
-                                        {({ active }) => (
-                                          <button
-                                            className={`${
-                                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                            } block w-full text-left px-4 py-2 text-sm`}
-                                          >
-                                            View details
-                                          </button>
-                                        )}
-                                      </Menu.Item>
-                                      <Menu.Item>
-                                        {({ active }) => (
-                                          <button
-                                            className={`${
-                                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                            } block w-full text-left px-4 py-2 text-sm`}
-                                          >
-                                            Download
-                                          </button>
-                                        )}
-                                      </Menu.Item>
-                                      <Menu.Item>
-                                        {({ active }) => (
-                                          <button
-                                            className={`${
-                                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                            } block w-full text-left px-4 py-2 text-sm`}
-                                          >
-                                            Rename
-                                          </button>
-                                        )}
-                                      </Menu.Item>
-                                      <Menu.Item>
-                                        {({ active }) => (
-                                          <button
-                                            className={`${
-                                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                            } block w-full text-left px-4 py-2 text-sm`}
-                                          >
-                                            Move to folder
-                                          </button>
-                                        )}
-                                      </Menu.Item>
-                                      <Menu.Item>
-                                        {({ active }) => (
-                                          <button
-                                            className={`${
-                                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                                            } block w-full text-left px-4 py-2 text-sm`}
-                                          >
-                                            Share
-                                          </button>
-                                        )}
-                                      </Menu.Item>
-                                      <Menu.Item>
-                                        {({ active }) => (
-                                          <button
-                                            className={`${
-                                              active ? 'bg-red-50 text-red-700' : 'text-red-600'
-                                            } block w-full text-left px-4 py-2 text-sm`}
-                                          >
-                                            Delete
-                                          </button>
-                                        )}
-                                      </Menu.Item>
-                                    </>
-                                  )}
-                                </div>
-                              </Menu.Items>
-                            </Transition>
-                          </Menu>
                         </div>
                       </td>
                     </tr>
-                  ))
+                  ) : (
+                    getCurrentFolderContents().map((item) => (
+                      <tr key={item.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {item.type === 'document' ? (
+                            <div className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedDocuments.includes(item.id)}
+                                onChange={() => toggleDocumentSelection(item.id)}
+                                className="h-4 w-4 text-[#800000] focus:ring-[#800000] border-gray-300 rounded"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-4"></div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center">
+                              {item.type === 'folder' ? (
+                                <HiOutlineFolder className="h-6 w-6 text-yellow-500" />
+                              ) : (
+                                getDocumentTypeIcon(item.documentType)
+                              )}
+                            </div>
+                            <div className="ml-4">
+                              {item.type === 'folder' ? (
+                                <button
+                                  onClick={() => navigateToFolder(item.id, item.name)}
+                                  className="text-sm font-medium text-[#800000] hover:text-[#600000]"
+                                >
+                                  {item.name}
+                                </button>
+                              ) : (
+                                <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                              )}
+                              {item.type === 'document' && (
+                                <div className="text-xs text-gray-500">
+                                  {documentTypes.find(t => t.id === item.documentType)?.name || 'Document'}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{item.owner}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <HiOutlineCalendar className="mr-1.5 h-4 w-4 text-gray-400" />
+                            <div className="text-sm text-gray-500">{formatDate(item.dateModified)}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatFileSize(item.size)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            {item.type === 'document' && (
+                              <>
+                                <button
+                                  className="text-gray-500 hover:text-gray-700"
+                                  title="Download"
+                                  onClick={() => showToast("Download document feature coming soon!", "success")}
+                                >
+                                  <HiOutlineDownload className="h-5 w-5" />
+                                </button>
+                                <button
+                                  className="text-gray-500 hover:text-gray-700"
+                                  title="Share"
+                                  onClick={() => showToast("Share document feature coming soon!", "success")}
+                                >
+                                  <HiOutlineShare className="h-5 w-5" />
+                                </button>
+                              </>
+                            )}
+                            <Menu as="div" className="relative inline-block text-left">
+                              {({ open }) => {
+                                const menuButtonRef = useRef(null);
+                                const [buttonRect, setButtonRect] = useState(null);
+                                
+                                // Update position when scrolling
+                                useEffect(() => {
+                                  if (open && menuButtonRef.current) {
+                                    const updatePosition = () => {
+                                      const rect = menuButtonRef.current.getBoundingClientRect();
+                                      setButtonRect({
+                                        bottom: rect.bottom,
+                                        right: rect.right,
+                                        left: rect.left,
+                                        top: rect.top
+                                      });
+                                    };
+                                    
+                                    // Initial position
+                                    updatePosition();
+                                    
+                                    // Update position on scroll
+                                    window.addEventListener('scroll', updatePosition, true);
+                                    
+                                    return () => {
+                                      window.removeEventListener('scroll', updatePosition, true);
+                                    };
+                                  }
+                                }, [open]);
+                                
+                                return (
+                                  <>
+                                    <Menu.Button 
+                                      ref={menuButtonRef}
+                                      className="text-gray-500 hover:text-gray-700"
+                                    >
+                                      <HiOutlineChevronDown className="h-5 w-5" />
+                                    </Menu.Button>
+
+                                    {open && buttonRect && createPortal(
+                                      <Transition
+                                        as={Fragment}
+                                        show={open}
+                                        enter="transition ease-out duration-100"
+                                        enterFrom="transform opacity-0 scale-95"
+                                        enterTo="transform opacity-100 scale-100"
+                                        leave="transition ease-in duration-75"
+                                        leaveFrom="transform opacity-100 scale-100"
+                                        leaveTo="transform opacity-0 scale-95"
+                                      >
+                                        <Menu.Items
+                                          static
+                                          className="absolute z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                          style={{
+                                            position: 'fixed', // Changed from absolute to fixed
+                                            top: buttonRect.bottom + 5,
+                                            left: buttonRect.left - 120,
+                                          }}
+                                        >
+                                          <div className="py-1">
+                                            {item.type === 'folder' ? (
+                                              <>
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      className={`${
+                                                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                                                      } block w-full text-left px-4 py-2 text-sm`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showToast("Rename folder feature coming soon!", "success");
+                                                      }}
+                                                    >
+                                                      Rename folder
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      className={`${
+                                                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                                                      } block w-full text-left px-4 py-2 text-sm`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showToast("Move folder feature coming soon!", "success");
+                                                      }}
+                                                    >
+                                                      Move folder
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      className={`${
+                                                        active ? 'bg-red-50 text-red-700' : 'text-red-600'
+                                                      } block w-full text-left px-4 py-2 text-sm`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showToast("Delete folder feature coming soon!", "success");
+                                                      }}
+                                                    >
+                                                      Delete folder
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      className={`${
+                                                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                                                      } block w-full text-left px-4 py-2 text-sm`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showToast("View document details feature coming soon!", "success");
+                                                      }}
+                                                    >
+                                                      View details
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      className={`${
+                                                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                                                      } block w-full text-left px-4 py-2 text-sm`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showToast("Download document feature coming soon!", "success");
+                                                      }}
+                                                    >
+                                                      Download
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      className={`${
+                                                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                                                      } block w-full text-left px-4 py-2 text-sm`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showToast("Rename document feature coming soon!", "success");
+                                                      }}
+                                                    >
+                                                      Rename
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      className={`${
+                                                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                                                      } block w-full text-left px-4 py-2 text-sm`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showToast("Move document feature coming soon!", "success");
+                                                      }}
+                                                    >
+                                                      Move to folder
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      className={`${
+                                                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                                                      } block w-full text-left px-4 py-2 text-sm`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showToast("Share document feature coming soon!", "success");
+                                                      }}
+                                                    >
+                                                      Share
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      className={`${
+                                                        active ? 'bg-red-50 text-red-700' : 'text-red-600'
+                                                      } block w-full text-left px-4 py-2 text-sm`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        showToast("Delete document feature coming soon!", "success");
+                                                      }}
+                                                    >
+                                                      Delete
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                              </>
+                                            )}
+                                          </div>
+                                        </Menu.Items>
+                                      </Transition>,
+                                      document.body
+                                    )}
+                                  </>
+                                );
+                              }}
+                            </Menu>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                 )}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -1210,6 +1308,32 @@ const AdminDocumentsPage = () => {
           </div>
         </Dialog>
       </Transition.Root>
+
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 max-w-sm w-full bg-white shadow-lg rounded-lg p-4 ${toast.type === 'success' ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}`}>
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {toast.type === 'success' ? (
+                <HiOutlineCheck className="h-6 w-6 text-green-500" />
+              ) : (
+                <HiOutlineExclamation className="h-6 w-6 text-red-500" />
+              )}
+            </div>
+            <div className="ml-3 w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900">{toast.message}</p>
+            </div>
+            <div className="ml-4 flex-shrink-0">
+              <button
+                onClick={() => setToast(null)}
+                className="inline-flex text-gray-400 hover:text-gray-500"
+              >
+                <HiOutlineX className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

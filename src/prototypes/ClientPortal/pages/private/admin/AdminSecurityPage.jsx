@@ -63,6 +63,9 @@ const AdminSecurityPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [timeFilter, setTimeFilter] = useState('all');
 
+  // Toast notification state
+  const [toast, setToast] = useState(null);
+
   // Generate sample audit logs
   useEffect(() => {
     const mockLogs = [
@@ -314,6 +317,14 @@ const AdminSecurityPage = () => {
     alert('Audit logs export started. The file will be downloaded shortly.');
   };
 
+  // Show toast message
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000); // Automatically dismiss after 3 seconds
+  };
+
   // UI helper functions
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -349,7 +360,7 @@ const AdminSecurityPage = () => {
           </div>
           <div className="mt-4 md:mt-0">
             <button
-              onClick={() => setShowResetConfirmation(true)}
+              onClick={() => showToast("Reset functionality coming soon!", "success")}
               type="button"
               className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
@@ -669,7 +680,7 @@ const AdminSecurityPage = () => {
                       <h4 className="text-sm font-medium text-gray-700">Allowed IP Addresses</h4>
                       <button
                         type="button"
-                        onClick={() => setShowAddIPModal(true)}
+                        onClick={() => showToast("IP restriction feature coming soon!", "success")}
                         className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-[#800000] bg-[#800000] bg-opacity-10 hover:bg-opacity-20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                       >
                         Add IP
@@ -999,6 +1010,34 @@ const AdminSecurityPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 max-w-sm w-full bg-white shadow-lg rounded-lg p-4 z-50 ${
+          toast.type === 'success' ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'
+        }`}>
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {toast.type === 'success' ? (
+                <HiOutlineCheck className="h-6 w-6 text-green-500" />
+              ) : (
+                <HiOutlineExclamation className="h-6 w-6 text-red-500" />
+              )}
+            </div>
+            <div className="ml-3 w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900">{toast.message}</p>
+            </div>
+            <div className="ml-4 flex-shrink-0">
+              <button
+                onClick={() => setToast(null)}
+                className="inline-flex text-gray-400 hover:text-gray-500"
+              >
+                <HiOutlineX className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add IP Address Modal */}
       <Transition.Root show={showAddIPModal} as={Fragment}>

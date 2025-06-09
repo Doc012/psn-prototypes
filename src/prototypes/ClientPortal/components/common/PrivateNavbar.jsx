@@ -173,7 +173,7 @@ const PrivateNavbar = ({ openSidebar }) => {
                       {currentUser?.firstName} {currentUser?.lastName}
                     </span>
                     <span className="text-xs text-gray-500 capitalize">
-                      {currentUser?.role || 'User'}
+                      {currentUser?.role || ''}
                     </span>
                   </div>
                 </button>

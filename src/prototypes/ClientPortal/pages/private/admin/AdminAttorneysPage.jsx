@@ -34,6 +34,15 @@ const AdminAttorneysPage = () => {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [attorneyToDelete, setAttorneyToDelete] = useState(null);
   
+  // Add toast state
+  const [toast, setToast] = useState(null);
+  
+  // Add function to show toast
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+  
   const [newAttorney, setNewAttorney] = useState({
     firstName: '',
     lastName: '',
@@ -204,6 +213,7 @@ const AdminAttorneysPage = () => {
     });
     
     setIsAddingAttorney(false);
+    showToast('Attorney added successfully');
   };
 
   const handleUpdateAttorney = () => {
@@ -214,6 +224,7 @@ const AdminAttorneysPage = () => {
     setAttorneys(updatedAttorneys);
     setSelectedAttorney(null);
     setIsEditingAttorney(false);
+    showToast('Attorney updated successfully');
   };
 
   const handleDeleteAttorney = () => {
@@ -224,6 +235,7 @@ const AdminAttorneysPage = () => {
     setAttorneys(updatedAttorneys);
     setAttorneyToDelete(null);
     setIsConfirmingDelete(false);
+    showToast('Attorney deleted successfully');
   };
 
   const initiateEdit = (attorney) => {
@@ -269,6 +281,32 @@ const AdminAttorneysPage = () => {
 
   return (
     <div className="py-6">
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${
+          toast.type === 'success' ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'
+        } transition-all duration-300 ease-in-out transform translate-y-0 opacity-100`}>
+          <div className="flex items-center">
+            {toast.type === 'success' ? (
+              <HiOutlineCheck className="h-5 w-5 text-green-500 mr-3" />
+            ) : (
+              <HiOutlineExclamation className="h-5 w-5 text-red-500 mr-3" />
+            )}
+            <p className={`text-sm font-medium ${
+              toast.type === 'success' ? 'text-green-800' : 'text-red-800'
+            }`}>
+              {toast.message}
+            </p>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-4 text-gray-400 hover:text-gray-500 focus:outline-none"
+            >
+              <HiOutlineX className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
@@ -279,7 +317,7 @@ const AdminAttorneysPage = () => {
           </div>
           <div className="mt-4 md:mt-0">
             <button
-              onClick={() => setIsAddingAttorney(true)}
+              onClick={() => showToast("Add Attorney feature coming soon!", "success")}
               type="button"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
@@ -416,19 +454,19 @@ const AdminAttorneysPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                              onClick={() => viewAttorney(attorney)}
+                              onClick={() => showToast("View attorney details coming soon!", "success")}
                               className="text-gray-600 hover:text-gray-900 mr-3"
                             >
                               View
                             </button>
                             <button
-                              onClick={() => initiateEdit(attorney)}
+                              onClick={() => showToast("Edit attorney feature coming soon!", "success")}
                               className="text-[#800000] hover:text-[#600000] mr-3"
                             >
                               Edit
                             </button>
                             <button
-                              onClick={() => initiateDelete(attorney)}
+                              onClick={() => showToast("Delete attorney feature coming soon!", "success")}
                               className="text-red-600 hover:text-red-900"
                             >
                               Delete

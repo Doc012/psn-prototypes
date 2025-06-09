@@ -17,6 +17,7 @@ import {
   HiOutlineExclamation,
   HiOutlineTag,
   HiOutlineCheckCircle,
+  HiOutlineX,
 } from 'react-icons/hi';
 
 const AdminTimeActivitiesPage = () => {
@@ -48,6 +49,7 @@ const AdminTimeActivitiesPage = () => {
   const [filterBillable, setFilterBillable] = useState('all');
   const [filterApproval, setFilterApproval] = useState('all');
   const [timerTick, setTimerTick] = useState(0);
+  const [toast, setToast] = useState(null);
 
   // Set up timer update effect
   useEffect(() => {
@@ -415,19 +417,27 @@ const AdminTimeActivitiesPage = () => {
     ? Math.round((filteredEntries.filter(e => e.billable).length / filteredEntries.length) * 100) 
     : 0;
 
+  // Toast notification function
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000); // Auto-dismiss after 3 seconds
+  };
+
   // Event handlers
   const handleAddTimeEntry = () => {
-    alert('Add time entry functionality would be implemented here');
+    showToast("Add time entry feature coming soon!", "success");
     setIsAddingTimeEntry(false);
   };
 
   const handleEditTimeEntry = () => {
-    alert('Edit time entry functionality would be implemented here');
+    showToast("Edit time entry feature coming soon!", "success");
     setIsEditingTimeEntry(false);
   };
 
   const handleDeleteTimeEntry = () => {
-    alert('Delete time entry functionality would be implemented here');
+    showToast("Delete time entry feature coming soon!", "success");
     setShowDeleteConfirmation(false);
   };
 
@@ -509,13 +519,15 @@ const AdminTimeActivitiesPage = () => {
   // Handle Edit Button Click
   const handleEditClick = (entry) => {
     setSelectedTimeEntry(entry);
-    setIsEditingTimeEntry(true);
+    showToast("Edit time entry feature coming soon!", "success");
+    // Don't open the modal
   };
 
   // Handle Delete Button Click
   const handleDeleteClick = (entry) => {
     setSelectedTimeEntry(entry);
-    setShowDeleteConfirmation(true);
+    showToast("Delete time entry feature coming soon!", "success");
+    // Don't open the modal
   };
 
   // Handle client change in filters
@@ -538,7 +550,7 @@ const AdminTimeActivitiesPage = () => {
           <div className="mt-4 md:mt-0 flex space-x-3">
             {!activeTimer ? (
               <button
-                onClick={() => setIsAddingTimeEntry(true)}
+                onClick={() => showToast("Add time entry feature coming soon!", "success")}
                 type="button"
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
               >
@@ -836,7 +848,7 @@ const AdminTimeActivitiesPage = () => {
                         </p>
                         {!searchTerm && (
                           <button
-                            onClick={() => setIsAddingTimeEntry(true)}
+                            onClick={() => showToast("Add time entry feature coming soon!", "success")}
                             type="button"
                             className="mt-4 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                           >
@@ -933,6 +945,34 @@ const AdminTimeActivitiesPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 max-w-sm w-full bg-white shadow-lg rounded-lg p-4 z-50 ${
+          toast.type === 'success' ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'
+        }`}>
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {toast.type === 'success' ? (
+                <HiOutlineCheckCircle className="h-6 w-6 text-green-500" />
+              ) : (
+                <HiOutlineExclamation className="h-6 w-6 text-red-500" />
+              )}
+            </div>
+            <div className="ml-3 w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900">{toast.message}</p>
+            </div>
+            <div className="ml-4 flex-shrink-0">
+              <button
+                onClick={() => setToast(null)}
+                className="inline-flex text-gray-400 hover:text-gray-500"
+              >
+                <HiOutlineX className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Time Entry Modal */}
       <Transition.Root show={isAddingTimeEntry} as={Fragment}>
@@ -1202,7 +1242,7 @@ const AdminTimeActivitiesPage = () => {
                     <button
                       type="button"
                       className="mt-3 w-full inline-flex justify-center rounded-md border border-[#800000] shadow-sm px-4 py-2 bg-white text-base font-medium text-[#800000] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                      onClick={startTimer}
+                      onClick={() => showToast("Timer feature coming soon!", "success")}
                     >
                       <HiOutlinePlay className="-ml-1 mr-2 h-5 w-5" />
                       Start Timer

@@ -112,6 +112,9 @@ const SystemSettingsPage = () => {
   const [backupInProgress, setBackupInProgress] = useState(false);
   const [backupProgress, setBackupProgress] = useState(0);
 
+  // Toast notification state
+  const [toast, setToast] = useState(null);
+
   // Tabs
   const tabs = [
     { name: 'General', icon: HiOutlineCog },
@@ -264,6 +267,13 @@ const SystemSettingsPage = () => {
   const deleteBackup = (backupId) => {
     console.log(`Deleting backup with ID: ${backupId}`);
     alert(`Backup #${backupId} deleted successfully`);
+  };
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
   };
 
   return (
@@ -1235,7 +1245,7 @@ const SystemSettingsPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <button
                           type="button"
-                          onClick={startManualBackup}
+                          onClick={() => showToast("Manual backup feature coming soon!", "success")}
                           className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                         >
                           <HiOutlineCloudUpload className="-ml-1 mr-2 h-5 w-5" />
@@ -1244,7 +1254,7 @@ const SystemSettingsPage = () => {
                         
                         <button
                           type="button"
-                          onClick={() => showConfirmation('clearCache')}
+                          onClick={() => showToast("Cache clearing feature coming soon!", "success")}
                           className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                         >
                           <HiOutlineExclamation className="-ml-1 mr-2 h-5 w-5 text-gray-400" />
@@ -1253,7 +1263,7 @@ const SystemSettingsPage = () => {
 
                         <button
                           type="button"
-                          onClick={() => showConfirmation('resetSettings')}
+                          onClick={() => showToast("Reset settings feature coming soon!", "success")}
                           className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                         >
                           <HiOutlineRefresh className="-ml-1 mr-2 h-5 w-5 text-gray-400" />
@@ -1370,7 +1380,7 @@ const SystemSettingsPage = () => {
                 <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                   <button
                     type="button"
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#800000] text-base font-medium text-white hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] sm:w-auto sm:text-sm"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#800000] text-base font-medium text-white hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                     onClick={cancelBackup}
                   >
                     Cancel Backup
@@ -1391,6 +1401,34 @@ const SystemSettingsPage = () => {
           </div>
         </Dialog>
       </Transition.Root>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 max-w-sm w-full bg-white shadow-lg rounded-lg p-4 z-50 ${
+          toast.type === 'success' ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'
+        }`}>
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {toast.type === 'success' ? (
+                <HiOutlineCheck className="h-6 w-6 text-green-500" />
+              ) : (
+                <HiOutlineExclamation className="h-6 w-6 text-red-500" />
+              )}
+            </div>
+            <div className="ml-3 w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900">{toast.message}</p>
+            </div>
+            <div className="ml-4 flex-shrink-0">
+              <button
+                onClick={() => setToast(null)}
+                className="inline-flex text-gray-400 hover:text-gray-500"
+              >
+                <HiOutlineX className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

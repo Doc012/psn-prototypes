@@ -38,6 +38,9 @@ const AdminClientsPage = () => {
   const [clientToDelete, setClientToDelete] = useState(null);
   const [showExport, setShowExport] = useState(false);
   
+  // Add toast state if not already there
+  const [toast, setToast] = useState(null);
+  
   const [newClient, setNewClient] = useState({
     firstName: '',
     lastName: '',
@@ -325,6 +328,7 @@ const AdminClientsPage = () => {
     });
     
     setIsAddingClient(false);
+    showToast('Client added successfully');
   };
 
   const handleUpdateClient = () => {
@@ -335,6 +339,7 @@ const AdminClientsPage = () => {
     setClients(updatedClients);
     setSelectedClient(null);
     setIsEditingClient(false);
+    showToast('Client updated successfully');
   };
 
   const handleDeleteClient = () => {
@@ -345,6 +350,7 @@ const AdminClientsPage = () => {
     setClients(updatedClients);
     setClientToDelete(null);
     setIsConfirmingDelete(false);
+    showToast('Client deleted successfully');
   };
 
   const initiateEdit = (client) => {
@@ -395,6 +401,12 @@ const AdminClientsPage = () => {
   const getStatusBadgeColor = (status) => {
     const statusOption = statusOptions.find(option => option.id === status);
     return statusOption ? statusOption.color : 'bg-gray-100 text-gray-800';
+  };
+
+  // Show toast notification
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   return (
@@ -448,7 +460,7 @@ const AdminClientsPage = () => {
             </div>
             
             <button
-              onClick={() => setIsAddingClient(true)}
+              onClick={() => showToast("Add Client feature coming soon!", "success")}
               type="button"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
@@ -593,19 +605,19 @@ const AdminClientsPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                              onClick={() => viewClient(client)}
+                              onClick={() => showToast("View client details coming soon!", "success")}
                               className="text-gray-600 hover:text-gray-900 mr-3"
                             >
                               View
                             </button>
                             <button
-                              onClick={() => initiateEdit(client)}
+                              onClick={() => showToast("Edit client feature coming soon!", "success")}
                               className="text-[#800000] hover:text-[#600000] mr-3"
                             >
                               Edit
                             </button>
                             <button
-                              onClick={() => initiateDelete(client)}
+                              onClick={() => showToast("Delete client feature coming soon!", "success")}
                               className="text-red-600 hover:text-red-900"
                             >
                               Delete
@@ -1293,7 +1305,7 @@ const AdminClientsPage = () => {
                       <div>
                         <button
                           type="button"
-                          onClick={() => initiateEdit(selectedClient)}
+                          onClick={() => showToast("Edit client feature coming soon!", "success")}
                           className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                         >
                           <HiOutlinePencilAlt className="-ml-1 mr-2 h-5 w-5 text-gray-500" />
@@ -1513,8 +1525,26 @@ const AdminClientsPage = () => {
           </div>
         </Dialog>
       </Transition>
-    </div>
-  )
-}
 
-export default AdminClientsPage
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 max-w-sm w-full bg-white shadow-lg rounded-lg p-4 ${toast.type === 'success' ? 'ring-2 ring-green-500' : 'ring-2 ring-red-500'}`}>
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              {toast.type === 'success' ? (
+                <HiOutlineCheck className="h-6 w-6 text-green-500" />
+              ) : (
+                <HiOutlineExclamation className="h-6 w-6 text-red-500" />
+              )}
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-gray-900">{toast.message}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminClientsPage;

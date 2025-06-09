@@ -441,6 +441,11 @@ const AdminBillingPage = () => {
   };
 
   const removeItem = (index) => {
+    if (newInvoice.items.length === 1) {
+      showToast("Invoice must have at least one item", "error");
+      return;
+    }
+    
     const updatedItems = newInvoice.items.filter((_, i) => i !== index);
     
     // Recalculate totals
@@ -485,6 +490,32 @@ const AdminBillingPage = () => {
   };
 
   const handleAddInvoice = () => {
+    // Form validation
+    if (!newInvoice.clientId) {
+      showToast("Please select a client", "error");
+      return;
+    }
+    
+    if (!newInvoice.caseId) {
+      showToast("Please select a case", "error");
+      return;
+    }
+    
+    // Check if invoice items are valid
+    if (newInvoice.items.length === 0) {
+      showToast("Please add at least one invoice item", "error");
+      return;
+    }
+    
+    const invalidItems = newInvoice.items.filter(
+      item => !item.description || item.amount <= 0
+    );
+    
+    if (invalidItems.length > 0) {
+      showToast("Please complete all invoice item details", "error");
+      return;
+    }
+    
     const clientName = clients.find(client => client.id === newInvoice.clientId)?.name || '';
     const caseTitle = cases.find(caseItem => caseItem.id === newInvoice.caseId)?.title || '';
     
@@ -500,6 +531,7 @@ const AdminBillingPage = () => {
     };
     
     setInvoices([...invoices, invoice]);
+    showToast(`Invoice ${invoiceNumber} created successfully`, "success");
     
     // Reset form
     setNewInvoice({
@@ -527,6 +559,7 @@ const AdminBillingPage = () => {
     );
     
     setInvoices(updatedInvoices);
+    showToast(`Invoice ${selectedInvoice.invoiceNumber} updated successfully`, "success");
     setSelectedInvoice(null);
     setIsEditingInvoice(false);
   };
@@ -537,6 +570,7 @@ const AdminBillingPage = () => {
     );
     
     setInvoices(updatedInvoices);
+    showToast(`Invoice ${invoiceToDelete.invoiceNumber} deleted successfully`, "success");
     setInvoiceToDelete(null);
     setIsConfirmingDelete(false);
   };
@@ -619,8 +653,18 @@ const AdminBillingPage = () => {
     return cases.filter(caseItem => caseItem.clientId === clientId);
   };
 
+  // Add toast state
+  const [toast, setToast] = useState(null);
+  
+  // Function to show toast notification
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+  
   return (
     <div className="py-6">
+    
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
@@ -632,7 +676,7 @@ const AdminBillingPage = () => {
           <div className="mt-4 md:mt-0">
             {activeTab === 'invoices' && (
               <button
-                onClick={() => setIsAddingInvoice(true)}
+                onClick={() => showToast("Create Invoice feature coming soon!", "success")}
                 type="button"
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
               >
@@ -643,6 +687,7 @@ const AdminBillingPage = () => {
             {activeTab === 'reports' && (
               <button
                 type="button"
+                onClick={() => showToast("Export Reports feature coming soon!", "success")}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
               >
                 <HiOutlineDownload className="-ml-1 mr-2 h-5 w-5" />
@@ -908,7 +953,7 @@ const AdminBillingPage = () => {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                   <button
-                                    onClick={() => viewInvoice(invoice)}
+                                    onClick={() => showToast("View invoice details coming soon!", "success")}
                                     className="text-gray-600 hover:text-gray-900 mr-3"
                                   >
                                     View
@@ -916,13 +961,13 @@ const AdminBillingPage = () => {
                                   {invoice.status !== 'paid' && (
                                     <>
                                       <button
-                                        onClick={() => initiateEdit(invoice)}
+                                        onClick={() => showToast("Edit invoice feature coming soon!", "success")}
                                         className="text-[#800000] hover:text-[#600000] mr-3"
                                       >
                                         Edit
                                       </button>
                                       <button
-                                        onClick={() => initiateDelete(invoice)}
+                                        onClick={() => showToast("Delete invoice feature coming soon!", "success")}
                                         className="text-red-600 hover:text-red-900"
                                       >
                                         Delete
@@ -1127,42 +1172,72 @@ const AdminBillingPage = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Senior Partner</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R3,500</td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button className="text-[#800000] hover:text-[#600000]">Edit</button>
+                            <button 
+                              className="text-[#800000] hover:text-[#600000]"
+                              onClick={() => showToast("Edit billing rate feature coming soon!", "success")}
+                            >
+                              Edit
+                            </button>
                           </td>
                         </tr>
                         <tr>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Partner</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R2,800</td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button className="text-[#800000] hover:text-[#600000]">Edit</button>
+                            <button 
+                              className="text-[#800000] hover:text-[#600000]"
+                              onClick={() => showToast("Edit billing rate feature coming soon!", "success")}
+                            >
+                              Edit
+                            </button>
                           </td>
                         </tr>
                         <tr>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Senior Associate</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R2,200</td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button className="text-[#800000] hover:text-[#600000]">Edit</button>
+                            <button 
+                              className="text-[#800000] hover:text-[#600000]"
+                              onClick={() => showToast("Edit billing rate feature coming soon!", "success")}
+                            >
+                              Edit
+                            </button>
                           </td>
                         </tr>
                         <tr>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Associate</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R1,800</td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button className="text-[#800000] hover:text-[#600000]">Edit</button>
+                            <button 
+                              className="text-[#800000] hover:text-[#600000]"
+                              onClick={() => showToast("Edit billing rate feature coming soon!", "success")}
+                            >
+                              Edit
+                            </button>
                           </td>
                         </tr>
                         <tr>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Junior Associate</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R1,400</td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button className="text-[#800000] hover:text-[#600000]">Edit</button>
+                            <button 
+                              className="text-[#800000] hover:text-[#600000]"
+                              onClick={() => showToast("Edit billing rate feature coming soon!", "success")}
+                            >
+                              Edit
+                            </button>
                           </td>
                         </tr>
                         <tr>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Paralegal</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R950</td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button className="text-[#800000] hover:text-[#600000]">Edit</button>
+                            <button 
+                              className="text-[#800000] hover:text-[#600000]"
+                              onClick={() => showToast("Edit billing rate feature coming soon!", "success")}
+                            >
+                              Edit
+                            </button>
                           </td>
                         </tr>
                       </tbody>
@@ -1288,6 +1363,7 @@ const AdminBillingPage = () => {
                 <div className="flex justify-end">
                   <button
                     type="button"
+                    onClick={() => showToast("Save settings feature coming soon!", "success")}
                     className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#800000] border border-transparent rounded-md hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
                   >
                     Save Settings
@@ -1626,6 +1702,7 @@ const AdminBillingPage = () => {
                               >
                                 <option value="">Select a client</option>
                                 {clients.map((client) => (
+
                                   <option key={client.id} value={client.id}>
                                     {client.name}
                                   </option>
@@ -1637,6 +1714,7 @@ const AdminBillingPage = () => {
                           <div>
                             <label htmlFor="caseId" className="block text-sm font-medium text-gray-700">
                               Case
+
                             </label>
                             <div className="mt-1">
                               <select
@@ -1661,7 +1739,7 @@ const AdminBillingPage = () => {
                             <label htmlFor="invoiceNumber" className="block text-sm font-medium text-gray-700">
                               Invoice Number
                             </label>
-                            <div className="mt-1">
+                                                       <div className="mt-1">
                               <input
                                 type="text"
                                 name="invoiceNumber"
@@ -1671,6 +1749,7 @@ const AdminBillingPage = () => {
                                 className="shadow-sm focus:ring-[#800000] focus:border-[#800000] block w-full sm:text-sm border-gray-300 rounded-md"
                                 placeholder="INV-2025-001"
                                 readOnly
+
                               />
                             </div>
                           </div>
@@ -2087,6 +2166,99 @@ const AdminBillingPage = () => {
             </div>
         </Dialog>
       </Transition.Root>
+
+      {/* Delete Confirmation Dialog */}
+      <Transition.Root show={isConfirmingDelete} as={Fragment}>
+        <Dialog
+          as="div"
+          className="fixed z-10 inset-0 overflow-y-auto"
+          onClose={setIsConfirmingDelete}
+        >
+          <div className="flex items-center justify-center min-h-screen px-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+            </Transition.Child>
+
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <div className="inline-block align-middle bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                <div>
+                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <HiOutlineExclamation className="h-6 w-6 text-red-600" aria-hidden="true" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-5">
+                    <Dialog.Title as="h3" className="text-lg leading-6 font-medium text-gray-900">
+                      Delete Invoice
+                    </Dialog.Title>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Are you sure you want to delete invoice {invoiceToDelete?.invoiceNumber}? This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                  <button
+                    type="button"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:col-start-2 sm:text-sm"
+                    onClick={handleDeleteInvoice}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000] sm:mt-0 sm:col-start-1 sm:text-sm"
+                    onClick={() => setIsConfirmingDelete(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition.Root>
+
+      {/* Toast notification - KEEP THIS STYLE AT THE END OF THE COMPONENT */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 max-w-sm w-full bg-white shadow-lg rounded-lg p-4 ${toast.type === 'success' ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}`}>
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {toast.type === 'success' ? (
+                <HiOutlineCheck className="h-6 w-6 text-green-500" />
+              ) : (
+                <HiOutlineExclamation className="h-6 w-6 text-red-500" />
+              )}
+            </div>
+            <div className="ml-3 w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900">{toast.message}</p>
+            </div>
+            <div className="ml-4 flex-shrink-0">
+              <button
+                onClick={() => setToast(null)}
+                className="inline-flex text-gray-400 hover:text-gray-500"
+              >
+                <HiOutlineX className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -34,7 +34,7 @@ const App = () => {
         "Real-time case updates",
         "Direct attorney communication"
       ],
-      fullDescription: "My Client Portal prototype demonstrates how I can create a secure, user-friendly platform where clients can submit documents, track their case progress, and communicate directly with their attorneys. The platform includes features like secure document upload, case status tracking, appointment scheduling, and encrypted messaging.",
+      fullDescription: "This Client Portal prototype demonstrates a secure, user-friendly platform where clients can submit documents, track their case progress, and communicate directly with their attorneys. The platform includes features like secure document upload, case status tracking, appointment scheduling, and encrypted messaging.",
       features: [
         "Secure document upload with encryption",
         "Real-time case status updates and notifications",
@@ -58,7 +58,7 @@ const App = () => {
         "Automated payment reminders",
         "Financial reporting dashboard"
       ],
-      fullDescription: "My Collections Tracker prototype showcases a comprehensive dashboard for monitoring payment collections. I've designed this system to help law firms track outstanding payments, send automated reminders, and generate detailed financial reports to improve cash flow and reduce administrative burden.",
+      fullDescription: "The Collections Tracker prototype showcases a comprehensive dashboard for monitoring payment collections. This system helps law firms track outstanding payments, send automated reminders, and generate detailed financial reports to improve cash flow and reduce administrative burden.",
       features: [
         "Visual dashboard with payment status metrics",
         "Automated email and SMS payment reminders",
@@ -82,7 +82,7 @@ const App = () => {
         "Advanced search capabilities",
         "Expiry & renewal alerts"
       ],
-      fullDescription: "My Document Management prototype demonstrates an intuitive system for organizing, accessing, and managing legal documents. I've designed this solution to help law firms centralize their document storage, implement version control, and automate document expiry alerts to ensure nothing important is missed.",
+      fullDescription: "The Document Management prototype demonstrates an intuitive system for organizing, accessing, and managing legal documents. This solution helps law firms centralize their document storage, implement version control, and automate document expiry alerts to ensure nothing important is missed.",
       features: [
         "Advanced document search with OCR technology",
         "Document categorization and tagging system",
@@ -106,7 +106,7 @@ const App = () => {
         "Deadline management",
         "Court date reminders"
       ],
-      fullDescription: "My Litigation Timeline prototype features a visual timeline tool for tracking all important dates in litigation matters. I've developed this solution to help legal teams visualize case progression, manage critical deadlines, and stay on top of court dates and document submission requirements.",
+      fullDescription: "The Litigation Timeline prototype features a visual timeline tool for tracking all important dates in litigation matters. This solution helps legal teams visualize case progression, manage critical deadlines, and stay on top of court dates and document submission requirements.",
       features: [
         "Interactive visual timeline for each case",
         "Automated deadline calculation based on court rules",
@@ -130,7 +130,7 @@ const App = () => {
         "Scheduled client updates",
         "Engagement tracking"
       ],
-      fullDescription: "My Email Automation prototype demonstrates how I can streamline client communications with automated, personalized emails. This system allows attorneys to create template emails, schedule automatic updates, and track client engagement to ensure effective communication without increasing administrative workload.",
+      fullDescription: "The Email Automation prototype demonstrates how to streamline client communications with automated, personalized emails. This system allows attorneys to create template emails, schedule automatic updates, and track client engagement to ensure effective communication without increasing administrative workload.",
       features: [
         "Customizable email template library",
         "Scheduled email campaigns based on case events",
@@ -197,11 +197,7 @@ const PrototypesDashboard = ({ prototypes }) => {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">
             <div className="flex-1">
-              <img 
-                src={psnLogo} 
-                alt="PSN Attorneys Logo" 
-                className="h-14 md:h-16 w-auto object-contain" 
-              />
+              <div className="text-2xl font-bold text-[#800000]">LegalTech Solutions</div>
             </div>
             <nav className="hidden md:flex space-x-6 items-center">
               <a 
@@ -252,10 +248,10 @@ const PrototypesDashboard = ({ prototypes }) => {
             className="max-w-3xl text-white"
           >
             <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
-              Digital Solutions for <span className="text-white">PSN Attorneys</span>
+              Transforming Legal Services <span className="text-white">with Code</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-gray-100">
-              Modernizing legal processes with innovative digital prototypes.
+              Digital tools designed to support law firms and their clients
             </p>
             <motion.div 
               initial={{ opacity: 0 }}
@@ -305,7 +301,7 @@ const PrototypesDashboard = ({ prototypes }) => {
               Innovative Legal Tech Solutions
             </h2>
             <p className="text-lg text-gray-600">
-              My digital solutions aim to streamline legal processes, enhance communication, and improve the client experience at PSN Attorneys.
+              These digital solutions aim to streamline legal processes, enhance communication, and improve the client experience for law firms.
             </p>
           </motion.div>
           
@@ -361,7 +357,7 @@ const PrototypesDashboard = ({ prototypes }) => {
               Benefits of Digital Transformation
             </h2>
             <p className="text-lg text-gray-600">
-              Embracing digital solutions offers significant advantages for your legal practice and clients.
+              Embracing digital solutions offers significant advantages for legal practices and their clients.
             </p>
           </motion.div>
           
@@ -409,7 +405,7 @@ const PrototypesDashboard = ({ prototypes }) => {
               transition={{ duration: 0.7 }}
               className="md:w-1/2"
             >
-              <h3 className="text-2xl font-bold mb-4 text-gray-800">Why Modernize Your Legal Practice?</h3>
+              <h3 className="text-2xl font-bold mb-4 text-gray-800">Why Modernize Legal Practices?</h3>
               <ul className="space-y-4">
                 {[
                   "Improved client satisfaction and retention",
@@ -452,10 +448,10 @@ const PrototypesDashboard = ({ prototypes }) => {
             className="text-center max-w-3xl mx-auto mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-800">
-              Digital Solutions Prototypes
+              Legal Tech Prototypes
             </h2>
             <p className="text-lg text-gray-600">
-              Explore my interactive prototypes demonstrating how digital tools can transform legal practice at PSN Attorneys.
+              Explore these interactive prototypes demonstrating how digital tools can transform legal practice.
             </p>
           </motion.div>
           
@@ -493,10 +489,10 @@ const PrototypesDashboard = ({ prototypes }) => {
             className="max-w-4xl mx-auto text-center"
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Ready to Transform Your Legal Practice?
+              Ready to Transform Legal Practice?
             </h2>
             <p className="text-xl mb-8 text-gray-200">
-              These prototypes showcase how digital solutions can streamline workflows and enhance client services at PSN Attorneys.
+              These prototypes showcase how digital solutions can streamline workflows and enhance client services for law firms.
             </p>
             <motion.div
               initial={{ opacity: 0 }}
@@ -521,21 +517,17 @@ const PrototypesDashboard = ({ prototypes }) => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center mb-8">
             <div className="mb-6 md:mb-0">
-              <img 
-                src={psnLogo} 
-                alt="PSN Attorneys Logo" 
-                className="h-12 w-auto object-contain invert opacity-90" 
-              />
+              <div className="text-2xl font-bold text-white">LegalTech Solutions</div>
             </div>
             <div className="text-center md:text-right">
-              <p className="text-gray-400">© 2025 PSN Attorneys - Digital Solutions Prototype</p>
+              <p className="text-gray-400">© 2025 Legal Tech Prototypes</p>
               <p className="text-sm mt-1 text-gray-500">
-                Designed and developed as demonstration prototypes
+                A self-initiated legal-tech concept project
               </p>
             </div>
           </div>
           
-          {/* Creator's mark and contact info */}
+          {/* Creator's mark and project story */}
           <motion.div 
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -552,12 +544,11 @@ const PrototypesDashboard = ({ prototypes }) => {
                   transition={{ delay: 0.3 }}
                   className="bg-gradient-to-br from-[#800000] to-[#500000] rounded-full h-12 w-12 flex items-center justify-center mr-3 shadow-lg"
                 >
-                  {/* Replace with your initials or personal logo */}
                   <span className="text-white font-bold text-lg">SN</span>
                 </motion.div>
                 <div>
-                  <p className="text-white font-medium">Designed & Developed by <span className="text-[#800000]">Siphamandla Ngcepe</span></p>
-                  <p className="text-gray-400 text-sm">Full Stack Developer</p>
+                  <p className="text-white font-medium">The PSN Project <span className="text-[#800000]">by Siphamandla Ngcepe</span></p>
+                  <p className="text-gray-400 text-sm">A self-initiated legal-tech concept using React + Tailwind CSS</p>
                 </div>
               </div>
               
@@ -578,6 +569,19 @@ const PrototypesDashboard = ({ prototypes }) => {
               </div>
             </div>
             
+            <div className="mt-8 bg-gray-800/50 p-6 rounded-lg">
+              <h4 className="font-bold text-lg text-white mb-3">About This Project</h4>
+              <p className="text-gray-300 mb-4">
+                This project began after visiting PSN Attorneys and attending their Digital Support Program session. 
+                Inspired by their new Rental Management offering, the concept of creating digital tools to support 
+                law firms and their clients was born.
+              </p>
+              <p className="text-gray-300">
+                The prototypes showcase how technology can streamline operations, improve client engagement, 
+                and make legal processes easier to understand.
+              </p>
+            </div>
+            
             <div className="flex justify-center mt-6 space-x-5">
               <a href="https://github.com/Doc012" target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors">
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -594,6 +598,28 @@ const PrototypesDashboard = ({ prototypes }) => {
                   <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c5.51 0 10-4.48 10-10S17.51 2 12 2zm6.605 4.61a8.502 8.502 0 011.93 5.314c-.281-.054-3.101-.629-5.943-.271-.065-.141-.12-.293-.184-.445a25.416 25.416 0 00-.564-1.236c3.145-1.28 4.577-3.124 4.761-3.362zM12 3.475c2.17 0 4.154.813 5.662 2.148-.152.216-1.443 1.941-4.48 3.08-1.399-2.57-2.95-4.675-3.189-5A8.687 8.687 0 0112 3.475zm-3.633.803a53.896 53.896 0 013.167 4.935c-3.992 1.063-7.517 1.04-7.896 1.04a8.581 8.581 0 014.729-5.975zM3.453 12.01v-.26c.37.01 4.512.065 8.775-1.215.25.477.477.965.694 1.453-.109.033-.228.065-.336.098-4.404 1.42-6.747 5.303-6.942 5.629a8.522 8.522 0 01-2.19-5.705zM12 20.547a8.482 8.482 0 01-5.239-1.8c.152-.315 1.888-3.656 6.703-5.337.022-.01.033-.01.054-.022a35.32 35.32 0 011.823 6.475 8.4 8.4 0 01-3.341.684zm4.761-1.465c-.086-.52-.542-3.015-1.659-6.084 2.679-.423 5.022.271 5.314.369a8.468 8.468 0 01-3.655 5.715z" clipRule="evenodd" />
                 </svg>
               </a>
+            </div>
+            <div className="text-center mt-6">
+              <p className="text-gray-400 text-sm">Project Links:</p>
+              <div className="flex justify-center space-x-4 mt-2">
+                <a 
+                  href="https://mr-sn.netlify.app" 
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#800000] hover:text-white transition-colors"
+                >
+                  Portfolio
+                </a>
+                <span className="text-gray-600">|</span>
+                <a 
+                  href="https://psn-demo.netlify.app"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#800000] hover:text-white transition-colors"
+                >
+                  Live Demo
+                </a>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -737,16 +763,16 @@ const PrototypesDashboard = ({ prototypes }) => {
                   </motion.div>
                 </div>
                 
-                {/* Demo implementation note */}
+                {/* Project background note */}
                 <div className="bg-gray-50 rounded-lg p-4 mb-8 border border-gray-200">
                   <h4 className="font-bold text-base mb-2 text-gray-800 flex items-center">
                     <svg className="w-5 h-5 mr-2 text-amber-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
-                    Implementation Note
+                    Project Background
                   </h4>
                   <p className="text-gray-600 text-sm">
-                    I've created this prototype to demonstrate my technical skills and understanding of PSN Attorneys' needs. The demo showcases the user interface and key interactions, while a full implementation would include backend integration and additional features.
+                    This prototype is part of a self-initiated legal-tech concept developed to explore how digital tools can support law firms and their clients. The demo showcases the user interface and key interactions, while a full implementation would include backend integration and additional features.
                   </p>
                 </div>
                 
@@ -758,15 +784,23 @@ const PrototypesDashboard = ({ prototypes }) => {
                   >
                     Close
                   </button>
-                  <Link 
-                    to={selectedPrototype.path}
-                    className="inline-flex items-center justify-center bg-[#800000] text-white py-2 px-6 rounded-lg hover:bg-[#600000] transition-colors duration-300 group font-medium"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Launch Live Demo
-                    <HiOutlineExternalLink className="ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Link>
+                  
+                  {selectedPrototype.id === 1 ? (
+                    <Link 
+                      to={selectedPrototype.path}
+                      className="inline-flex items-center justify-center bg-[#800000] text-white py-2 px-6 rounded-lg hover:bg-[#600000] transition-colors duration-300 group font-medium"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Launch Live Demo
+                      <HiOutlineExternalLink className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  ) : (
+                    <div className="inline-flex items-center justify-center bg-gray-300 text-gray-600 py-2 px-6 rounded-lg cursor-not-allowed font-medium">
+                      In Development
+                      <HiOutlineLightBulb className="ml-2" />
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -779,8 +813,9 @@ const PrototypesDashboard = ({ prototypes }) => {
 
 // Enhanced Prototype Card Component
 const PrototypeCard = ({ prototype, onDetailsClick }) => {
-  const { title, description, image, path, icon, color, benefits } = prototype;
+  const { id, title, description, image, path, icon, color, benefits } = prototype;
   const [isHovered, setIsHovered] = useState(false);
+  const isClientPortal = id === 1; // Only Client Portal has id 1
   
   return (
     <div 
@@ -802,6 +837,12 @@ const PrototypeCard = ({ prototype, onDetailsClick }) => {
             <h3 className="text-xl font-bold mt-2">{title}</h3>
           </div>
         </div>
+        
+        {!isClientPortal && (
+          <div className="absolute top-2 right-2 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-md">
+            Coming Soon
+          </div>
+        )}
       </div>
       <div className="p-5 flex-grow flex flex-col">
         <p className="text-gray-600 mb-4">{description}</p>
@@ -828,15 +869,25 @@ const PrototypeCard = ({ prototype, onDetailsClick }) => {
               <HiInformationCircle className="ml-1 h-4 w-4" />
             </button>
             
-            <Link 
-              to={path} 
-              className="inline-flex items-center group justify-center bg-[#800000] text-white py-2 px-4 rounded-lg hover:bg-[#600000] transition-colors duration-300 text-sm font-medium"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Live Demo
-              <HiArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
+            {isClientPortal ? (
+              <Link 
+                to={path} 
+                className="inline-flex items-center group justify-center bg-[#800000] text-white py-2 px-4 rounded-lg hover:bg-[#600000] transition-colors duration-300 text-sm font-medium"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Live Demo
+                <HiArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            ) : (
+              <button
+                disabled
+                className="inline-flex items-center justify-center bg-gray-300 text-gray-500 py-2 px-4 rounded-lg cursor-not-allowed text-sm font-medium"
+              >
+                In Development
+                <HiOutlineLightBulb className="ml-1 h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>

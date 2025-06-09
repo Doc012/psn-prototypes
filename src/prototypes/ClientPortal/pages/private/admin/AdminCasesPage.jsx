@@ -43,6 +43,9 @@ const AdminCasesPage = () => {
   const [caseToDelete, setCaseToDelete] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
   
+  // Add toast state
+  const [toast, setToast] = useState(null);
+  
   const [newCase, setNewCase] = useState({
     caseNumber: '',
     title: '',
@@ -420,6 +423,7 @@ const AdminCasesPage = () => {
     });
     
     setIsAddingCase(false);
+    showToast('Case added successfully');
   };
 
   const handleUpdateCase = () => {
@@ -430,6 +434,7 @@ const AdminCasesPage = () => {
     setCases(updatedCases);
     setSelectedCase(null);
     setIsEditingCase(false);
+    showToast('Case updated successfully');
   };
 
   const handleDeleteCase = () => {
@@ -440,6 +445,7 @@ const AdminCasesPage = () => {
     setCases(updatedCases);
     setCaseToDelete(null);
     setIsConfirmingDelete(false);
+    showToast('Case deleted successfully');
   };
 
   const initiateEdit = (caseItem) => {
@@ -516,8 +522,41 @@ const AdminCasesPage = () => {
     }
   };
 
+  // Show toast notification
+  const showToast = (message, type = 'success') => {
+    console.log("Showing toast:", message); // Debugging line
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   return (
     <div className="py-6">
+      {/* Toast notification - make sure it's more visible */}
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg ${
+          toast.type === 'success' ? 'bg-green-100 border border-green-400' : 'bg-red-100 border border-red-400'
+        } transition-all duration-300 ease-in-out transform translate-y-0 opacity-100`}>
+          <div className="flex items-center">
+            {toast.type === 'success' ? (
+              <HiOutlineCheck className="h-5 w-5 text-green-500 mr-3" />
+            ) : (
+              <HiOutlineExclamation className="h-5 w-5 text-red-500 mr-3" />
+            )}
+            <p className={`text-sm font-medium ${
+              toast.type === 'success' ? 'text-green-800' : 'text-red-800'
+            }`}>
+              {toast.message}
+            </p>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-4 text-gray-400 hover:text-gray-500 focus:outline-none"
+            >
+              <HiOutlineX className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
@@ -528,7 +567,7 @@ const AdminCasesPage = () => {
           </div>
           <div className="mt-4 md:mt-0">
             <button
-              onClick={() => setIsAddingCase(true)}
+              onClick={() => showToast("Add Case feature coming soon!", "success")}
               type="button"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#800000] hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
             >
@@ -691,19 +730,22 @@ const AdminCasesPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                              onClick={() => viewCase(caseItem)}
+                              onClick={() => {
+                                console.log("Button clicked"); // Add this for debugging
+                                showToast("View case details coming soon!", "success");
+                              }}
                               className="text-gray-600 hover:text-gray-900 mr-3"
                             >
                               View
                             </button>
                             <button
-                              onClick={() => initiateEdit(caseItem)}
+                              onClick={() => showToast("Edit case feature coming soon!", "success")}
                               className="text-[#800000] hover:text-[#600000] mr-3"
                             >
                               Edit
                             </button>
                             <button
-                              onClick={() => initiateDelete(caseItem)}
+                              onClick={() => showToast("Delete case feature coming soon!", "success")}
                               className="text-red-600 hover:text-red-900"
                             >
                               Delete
@@ -1083,7 +1125,10 @@ const AdminCasesPage = () => {
                   <button
                     type="button"
                     className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#800000] border border-transparent rounded-md hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                    onClick={handleAddCase}
+                    onClick={() => {
+                      showToast("Add case feature coming soon!", "success");
+                      setIsAddingCase(false);
+                    }}
                     disabled={!newCase.title || !newCase.clientId || !newCase.practiceArea}
                   >
                     Add Case
@@ -1373,7 +1418,10 @@ const AdminCasesPage = () => {
                   <button
                     type="button"
                     className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#800000] border border-transparent rounded-md hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#800000]"
-                    onClick={handleUpdateCase}
+                    onClick={() => {
+                      showToast("Save changes feature coming soon!", "success");
+                      setIsEditingCase(false);
+                    }}
                   >
                     Save Changes
                   </button>
@@ -1532,7 +1580,8 @@ const AdminCasesPage = () => {
         </Dialog>
       </Transition>
     </div>
-  )
-}
 
-export default AdminCasesPage
+  );
+};
+
+export default AdminCasesPage;
