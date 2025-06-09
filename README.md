@@ -1,48 +1,58 @@
 # 🏛️ PSN Project – Legal Tech Solutions
+
 > A self-initiated legal tech project designed to support law firms and improve access to legal services through modern, efficient systems.
 
 ## 📌 About the Project
-The **PSN Project** is inspired by a local law firm (PSN Attorneys) and their recent Digital Support Program session. It aims to demonstrate how software development can streamline legal operations, enhance client engagement, and promote public understanding of legal processes.
 
-This project is built using **React** and **Tailwind CSS**, with a focus on clean design, usability, and problem-solving.
+The **PSN Project** is inspired by a local law firm (PSN Attorneys) and their Digital Support Program. It showcases how modern technology can streamline legal operations, enhance client experience, and make legal processes more accessible.
+
+Built with **React** and **Tailwind CSS**, this project is focused on real-world impact — starting with a fully working **Client Portal** demo.
+
+🔗 **Live Demo:** [https://psn-demo.netlify.app](https://psn-demo.netlify.app)
 
 ---
 
 ## 🧩 Project Modules
-### 🔐 Client Portal *(Working Demo Available)*
+
+### 🔐 Client Portal *(Live Demo Available)*
 A secure digital space for clients to:
 - Track case progress
 - Upload and access documents
-- Communicate directly with the firm
+- Communicate with the firm in a professional environment
 
 ### 📊 Collections Tracker *(Planned)*
-- Monitor outstanding balances
-- Send automated reminders
-- Generate financial reports
+- Monitor outstanding payments
+- Automate reminders
+- View financial reports in real-time
 
 ### 🗂 Document Management System *(Planned)*
-- Upload, tag, and organize files
-- Receive alerts for expiries and renewals
-- Search across client records
+- Smart tagging, uploading, and searching
+- Expiry reminders and file management
 
 ### 🧾 Litigation Timeline *(Planned)*
-- Visual roadmap of a case's lifecycle
-- Automatic alerts for key dates and tasks
+- Step-by-step view of a client’s legal journey
+- Helps users understand processes and timelines
 
-### ✉️ Email Automation *(Planned)*
-- Prebuilt templates
-- Scheduled emails for reminders, onboarding, and status updates
+### ✉️ Email Automation Tool *(Planned)*
+- Prebuilt legal templates
+- Scheduled communications and alerts
 
 ---
 
 ## 🚀 Tech Stack
+
 - **Frontend:** React, Tailwind CSS, Vite
-- **Status:** Actively developing (1/5 prototypes completed)
+- **Deployment:** Netlify
+- **Status:** Actively developing (1 of 5 modules completed)
 
 ---
 
-## 🛠️ How to Run Locally
+## 🛠️ Getting Started
+
+To run locally:
+
 ```bash
 git clone https://github.com/your-username/psn-project.git
+cd psn-project
 npm install
 npm run dev
