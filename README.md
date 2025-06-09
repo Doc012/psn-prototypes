@@ -6,7 +6,7 @@
 
 The **PSN Project** is inspired by a local law firm (PSN Attorneys) and their Digital Support Program. It showcases how modern technology can streamline legal operations, enhance client experience, and make legal processes more accessible.
 
-Built with **React** and **Tailwind CSS**, this project is focused on real-world impact — starting with a fully working **Client Portal** demo.
+Built with **React** and **Tailwind CSS**, this project is focused on real-world impact starting with a fully working **Client Portal** demo.
 
 🔗 **Live Demo:** [https://psn-demo.netlify.app](https://psn-demo.netlify.app)
 
@@ -52,7 +52,6 @@ A secure digital space for clients to:
 To run locally:
 
 ```bash
-git clone https://github.com/your-username/psn-project.git
-cd psn-project
+git clone https://github.com/Doc012/psn-prototypes.git
 npm install
 npm run dev
